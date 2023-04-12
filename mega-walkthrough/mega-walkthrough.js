@@ -188,9 +188,9 @@ var megaWalkthrough =
             // console.log('rect: ',rect);
 
             const top = rect.top;
-            const right = window.innerWidth - rect.right;
+            const right = Math.max(window.innerWidth - rect.right, 10);
             const bottom = window.innerHeight - rect.bottom;
-            const left = rect.left;
+            const left = Math.max(rect.left, 10);
 
             // 0,1,2,3 = t,l,b,r
 
@@ -282,7 +282,6 @@ var megaWalkthrough =
                 }
             }
         });
-
 
         buildPlacard();
         // console.log("end of mega-walkthrough.js");

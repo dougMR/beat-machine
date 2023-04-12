@@ -25,7 +25,6 @@
         <div class="mega-drum-machine">
             <header>
                 <span class="title">BeatMachine</span>
-                by <span class="signature">megaDoug</span>
             </header>
             <main>
                 <div id="help-icon" data-mega-step="0">?</div>
@@ -130,14 +129,16 @@
                     <div
                         id="counter"
                         style="
-                            background-color: black;
-                            color: white;
+                            background-color: rgba(0, 0, 0, 0.5);
+                            color: #999;
                             padding: 0.25rem 0.5rem;
-                            opacity: 0.5;
+                            /* opacity: 0.5; */
                             font-family: monospace;
                             font-size: 0.8rem;
                             border-radius: 0 0 0.5rem 0.5rem;
                             letter-spacing: 0.05em;
+                            box-shadow: inset 0.5rem 0.5rem 0.3rem -0.3rem rgba(0, 0, 0, 0.5);
+                            /* border: 2px solid black; */
                         "
                     >
                         &nbsp;
@@ -160,7 +161,7 @@
                     <div class="close">x</div>
                 </section>
             </main>
-            <footer>from Wes Bos JS30 exercise 1</footer>
+            <footer>by <span class="signature">megaDoug</span></footer>
 
             <!-- Sounds -->
             <audio data-key="65" src="./sounds/clap.wav"></audio>
@@ -250,7 +251,8 @@ Y8888D' 88   YD ~Y8888P' YP  YP  YP      YP  YP  YP YP   YP  `Y88P' YP   YP Y888
             drawTrack();
 
             const toggleHelp = () => {
-                document.getElementById("help").classList.toggle("on");
+                // document.getElementById("help").classList.toggle("on");
+                megaWalkthrough.toggle();
             };
             const setTempo = (value) => {
                 bpm = value;
@@ -664,7 +666,9 @@ Y8888D' 88   YD ~Y8888P' YP  YP  YP      YP  YP  YP YP   YP  `Y88P' YP   YP Y888
                         }
 
                         if (note.beatIcon) {
-                            note.beatIcon.classList.add("on");
+                            if (!note.beatIcon.classList.contains("selected")) {
+                                note.beatIcon.classList.add("on");
+                            }
                         }
                     }
                 });
@@ -676,6 +680,14 @@ Y8888D' 88   YD ~Y8888P' YP  YP  YP      YP  YP  YP YP   YP  `Y88P' YP   YP Y888
                 startTime = -1;
                 window.requestAnimationFrame(step);
             };
+
+            const updateCounter = () => {
+                document.getElementById(
+                    "counter"
+                ).innerHTML = `measure ${currentMeasure}
+                beat ${currentBeat}
+                ms ${Math.round(currentMS)}`;
+            }
 
             /*
 
@@ -728,13 +740,7 @@ Y8a     a8P  88,   "8b,   ,aa  88b,   ,a8"     88          "8a,   ,a8"  "8a,   ,
                     // this beat only
                     checkAndPlayNotes(currentMeasure, currentBeat, f0, f1);
                 }
-
-                document.getElementById(
-                    "counter"
-                ).innerHTML = `measure ${currentMeasure}
-                beat ${currentBeat}
-                ms ${currentMS}`;
-
+                updateCounter();
                 if (isPlaying) {
                     window.requestAnimationFrame(step);
                 }
@@ -863,25 +869,28 @@ Y8b  d8 `8b  d8' 88  V888    88    88 `88. `8b  d8' 88booo. db   8D
             // window.addEventListener("keyup", handleKeyUp);
 
             window.addEventListener("keydown", (event) => {
-                if (keysDown.includes(event.keyCode)) {
+                if (keysDown.includes(event.code)) {
                     // key is already down
                     return;
                 } else {
-                    keysDown.push(event.keyCode);
+                    keysDown.push(event.code);
                 }
-                if (event.keyCode === 82) {
+                if (event.code === "KeyR") {
                     // 'R'
                     // record
                     toggleRecording();
-                } else if (event.keyCode === 88 || event.keyCode === 8) {
+                } else if (
+                    event.code === "KeyX" ||
+                    event.code === "Backspace"
+                ) {
                     // 'X' or Backspace
                     // clear note/s
                     clearTrack();
-                } else if (event.keyCode === 81) {
+                } else if (event.code === "KeyQ") {
                     // 'Q'
                     // quantize
                     toggleQuantize();
-                } else if (event.keyCode === 32) {
+                } else if (event.code === "Space") {
                     // Spacebar
                     if (!isPlaying) {
                         startPlaying();
@@ -890,7 +899,7 @@ Y8b  d8 `8b  d8' 88  V888    88    88 `88. `8b  d8' 88booo. db   8D
                         stopRecording();
                         playhead.classList.remove("on");
                     }
-                } else if (event.keyCode === 69) {
+                } else if (event.code === "KeyE") {
                     // 'E'
                     // edit
                     toggleEdit();
@@ -911,7 +920,7 @@ Y8b  d8 `8b  d8' 88  V888    88    88 `88. `8b  d8' 88booo. db   8D
                 });
 
             window.addEventListener("keyup", (event) => {
-                const keyIndex = keysDown.indexOf(event.keyCode);
+                const keyIndex = keysDown.indexOf(event.code);
                 if (keyIndex !== -1) {
                     keysDown.splice(keyIndex, 1);
                 }
@@ -1042,6 +1051,7 @@ Y8b  d8 `8b  d8' 88  V888    88    88 `88. `8b  d8' 88booo. db   8D
                 currentMeasure = Math.floor(beats / 4);
                 currentBeat = beats - currentMeasure * 4;
                 currentMS = elapsed - beats * msPerBeat;
+                updateCounter();
             };
 
             // Drag Playhead
@@ -1192,15 +1202,15 @@ Y8b  d8 `8b  d8' 88  V888    88    88 `88. `8b  d8' 88booo. db   8D
                 ["Help", "Press '?' to toggle Help."],
                 [
                     "Drum Pad",
-                    "Each sample corresponds to a key on the keyboard.",
+                    "Each sample corresponds to a key on the keyboard.  Try it out!",
                 ],
                 [
                     "Beat Light",
                     "This flashes on the beat while the track is playing or recording.",
                 ],
                 [
-                    "Record Light",
-                    "Press 'R' to toggle recording.  Press sample keys while recording to add them to the track.",
+                    "Record",
+                    "Press 'R' to toggle recording.  Press sample keys while recording to add notes to the track.",
                 ],
                 ["Cut", "Press 'X' (or backspace) to remove selected notes."],
                 [
@@ -1208,7 +1218,7 @@ Y8b  d8 `8b  d8' 88  V888    88    88 `88. `8b  d8' 88booo. db   8D
                     "Press 'Q' to toggle quantize mode. This snaps notes to the closest beat",
                 ],
                 [
-                    "Edit Light",
+                    "Edit",
                     "Press 'E' to toggle Edit mode.  In edit mode, you can select, move and delete notes.",
                 ],
                 ["Tempo", "Drag slider to set beats-per-minute."],
@@ -1239,17 +1249,17 @@ Y8b  d8 `8b  d8' 88  V888    88    88 `88. `8b  d8' 88booo. db   8D
     ]
     */
             // megaWalkthrough.show();
-            setTimeout(() => {
-                // Give time for Help (?) to get positioned
-                megaWalkthrough.start();
-            }, 2000);
+            // setTimeout(() => {
+            //     // Give time for Help (?) to get positioned
+
+            // }, 1000);
+            megaWalkthrough.start();
             window.addEventListener("keydown", (event) => {
-                if (event.keyCode === 191) {
+                console.log("code: ", event.code);
+                if (event.code === "Slash") {
                     // '?'
                     // help
-                    megaWalkthrough.toggle();
-                    event.stopPropagation();
-                    event.preventDefault();
+                    toggleHelp();
                 }
             });
         </script>
