@@ -1,0 +1,152 @@
+/* mega-placard system styles */
+.mega-placard {
+    position: absolute;
+    border-radius: 0.5rem;
+    background-color: hsl(195, 53%, 79%);
+    font-family: monospace;
+    width: 20vw;
+    min-width: 290px;
+    --pointer-offset: -8px;
+    --pointer-side-dist: 6px;
+    transition: top 2s;
+    box-shadow: 0 5px 10px 5px rgba(0, 0, 0, 0.2);
+}
+
+.mega-placard.hidden {
+    display: none;
+}
+
+.mega-placard header {
+    display: flex;
+    justify-content: space-between;
+}
+
+.mega-placard header .title {
+    font-family: sans-serif;
+    flex-grow: 1;
+    text-align: center;
+}
+
+.mega-placard header .close {
+    vertical-align: top;
+    padding: 0 0.5rem;
+    user-select: none;
+    cursor: pointer;
+}
+
+.mega-placard main {
+    border-top: 1px solid black;
+    border-bottom: 1px solid black;
+}
+
+.mega-placard main p.copy {
+    padding: 0 1em;
+}
+
+.mega-placard nav ul {
+    display: flex;
+    justify-content: center;
+    list-style: none;
+    padding: 0;
+}
+
+.mega-placard nav ul li {
+    text-align: center;
+    font-size: 1.5rem;
+}
+
+.mega-placard nav ul li a:after {
+    content: "•";
+    color: grey;
+}
+
+.mega-placard nav ul li a.active:after {
+    content: "•";
+    color: black;
+}
+
+.mega-placard footer {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.mega-placard .pointer {
+    position: absolute;
+    z-index: -1;
+    /*  */
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 0 10px 12px 10px;
+    border-color: transparent transparent lightblue transparent;
+}
+
+.mega-placard .pointer.top {
+    transform: rotate(360deg);
+    top: var(--pointer-offset);
+}
+
+.mega-placard .pointer.right {
+    transform: rotate(90deg);
+    right: calc(var(--pointer-offset) * 1.5);
+}
+
+.mega-placard .pointer.bottom {
+    transform: rotate(180deg);
+    bottom: var(--pointer-offset);
+}
+
+.mega-placard .pointer.left {
+    transform: rotate(270deg);
+    left: calc(var(--pointer-offset) * 1.5);
+}
+
+.mega-placard .pointer.-left {
+    left: var(--pointer-side-dist);
+}
+.mega-placard .pointer.-top {
+    top: calc(var(--pointer-side-dist) + 4px);
+}
+.mega-placard .pointer.-right {
+    right: var(--pointer-side-dist);
+}
+.mega-placard .pointer.-bottom {
+    bottom: calc(var(--pointer-side-dist) + 4px);
+}
+
+.mega-hilight {
+    display: block;
+    position: absolute;
+    /* border: 1px solid rgb(113, 138, 157); */
+    z-index: 10000;
+    box-shadow: inset 0 0 5px 0 rgba(33, 33, 33, 0.8),
+        rgb(33 33 33 / 50%) 0px 0px 0px 5000px;
+    box-sizing: border-box;
+    border-radius: 8px;
+    pointer-events: none;
+}
+.mega-hilight.hidden {
+    display: none;
+}
+.mega-hilight::after {
+    content: "";
+    position: absolute;
+    border: 1px solid lightblue;
+    border-radius: 8px;
+    box-sizing: border-box;
+    top: -2px;
+    left: -2px;
+    bottom: -2px;
+    right: -2px;
+}
+
+/* .mega-placard nav ul li::marker {
+            content: "•";
+            font-size: 1.5rem;
+            color: grey;
+        } */
+
+#temp {
+    position: absolute;
+    right: 0;
+}
