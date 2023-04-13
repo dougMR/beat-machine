@@ -10,7 +10,6 @@
     --pointer-side-dist: 6px;
     transition: top 2s;
     box-shadow: 0 5px 10px 5px rgba(0, 0, 0, 0.2);
-    overflow: hidden;
 }
 
 .mega-placard.hidden {
@@ -69,6 +68,8 @@
 .mega-placard footer {
     display: flex;
     justify-content: flex-end;
+    border-radius: 0 0 0.5rem 0.5rem;
+    overflow: hidden;
 }
 
 .mega-placard .pointer {

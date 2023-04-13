@@ -125,10 +125,35 @@
                             <kbd>L</kbd>
                             <span class="sound">tink</span>
                         </div>
+                        <div class="key" data-key="186">
+                            <kbd>;</kbd>
+                            <span class="sound">cowbell</span>
+                        </div>
+                        <div class="key" data-key="222">
+                            <kbd>'</kbd>
+                            <span class="sound">cb muted</span>
+                        </div>
+                    </div>
+
+                    <div id="code-controls">
+                        <button id="get-code-button" data-mega-step="10">
+                            Get Code
+                        </button>
+                        <fieldset
+                            style="display: inline; border: none"
+                            data-mega-step="11"
+                        >
+                            <input
+                                type="text"
+                                name="code"
+                                id="code-input"
+                            /><button id="enter-code-button">Enter Code</button>
+                        </fieldset>
                     </div>
                     <div
                         id="counter"
                         style="
+                            display: none;
                             background-color: rgba(0, 0, 0, 0.5);
                             color: #999;
                             padding: 0.25rem 0.5rem;
@@ -138,6 +163,7 @@
                             border-radius: 0 0 0.5rem 0.5rem;
                             letter-spacing: 0.05em;
                             box-shadow: inset 0.5rem 0.5rem 0.3rem -0.3rem rgba(0, 0, 0, 0.5);
+                            user-select: none;
                             /* border: 2px solid black; */
                         "
                     >
@@ -173,6 +199,8 @@
             <audio data-key="74" src="./sounds/snare.wav"></audio>
             <audio data-key="75" src="./sounds/tom.wav"></audio>
             <audio data-key="76" src="./sounds/tink.wav"></audio>
+            <audio data-key="186" src="./sounds/cowbell.wav"></audio>
+            <audio data-key="222" src="./sounds/cowbell_muted.wav"></audio>
             <audio id="tick" src="./sounds/metronone-tick.wav"></audio>
         </div>
         <script>
@@ -299,8 +327,8 @@ Y8888D' 88   YD ~Y8888P' YP  YP  YP      YP  YP  YP YP   YP  `Y88P' YP   YP Y888
                             currentBeat,
                             currentMS
                         );
-                    }
-                    if (!isPlaying) {
+                    } 
+                    
                         // play note
                         const key = document.querySelector(
                             `.key[data-key="${event.keyCode}"]`
@@ -308,7 +336,7 @@ Y8888D' 88   YD ~Y8888P' YP  YP  YP      YP  YP  YP YP   YP  `Y88P' YP   YP Y888
 
                         playSound(audio);
                         key.classList.add("playing");
-                    }
+                   
                 }
             };
 
@@ -387,7 +415,7 @@ Y8888D' 88   YD ~Y8888P' YP  YP  YP      YP  YP  YP YP   YP  `Y88P' YP   YP Y888
                     if (icon.classList.contains("selected")) {
                         draggingIcons = true;
                         lastIconDragX = getXinTrack(event);
-                        console.log("icon.startX", icon.offsetLeft);
+                        // console.log("icon.startX", icon.offsetLeft);
                     }
                     event.stopPropagation();
                 });
@@ -581,17 +609,17 @@ Y8888D' 88   YD ~Y8888P' YP  YP  YP      YP  YP  YP YP   YP  `Y88P' YP   YP Y888
             };
 
             const positionNoteFromIcon = (beatIcon) => {
-                console.log("positionNoteFromIcon()");
-                console.log(beatIcon);
+                // console.log("positionNoteFromIcon()");
+                // console.log(beatIcon);
                 // if (beatIcon.note) {
                 const note = beatIcon.note; // getNoteFromBeatIcon(beatIcon);
 
                 // }
-                console.log("beatIcon.offsetLeft", beatIcon.offsetLeft);
-                console.log("icon rect", beatIcon.getBoundingClientRect());
+                // console.log("beatIcon.offsetLeft", beatIcon.offsetLeft);
+                // console.log("icon rect", beatIcon.getBoundingClientRect());
                 const pctPos = beatIcon.offsetLeft / track.trackWidth;
                 const elapsed = pctPos * track.duration;
-                console.log("elapsed", elapsed);
+                // console.log("elapsed", elapsed);
                 const beats = Math.floor(elapsed / msPerBeat);
                 const measure = Math.floor(beats / 4);
                 const beat = beats - measure * 4;
@@ -602,7 +630,7 @@ Y8888D' 88   YD ~Y8888P' YP  YP  YP      YP  YP  YP YP   YP  `Y88P' YP   YP Y888
             };
 
             const removeNoteFromSong = (note) => {
-                console.log("removeNoteFromSong()");
+                // console.log("removeNoteFromSong()");
                 let icon = note.beatIcon;
                 let beat = song[note.measure][note.beat];
                 let noteIndex = beat.indexOf(note);
@@ -674,6 +702,23 @@ Y8888D' 88   YD ~Y8888P' YP  YP  YP      YP  YP  YP YP   YP  `Y88P' YP   YP Y888
                 });
             };
 
+            const buildSongFromSongCode = (code) => {
+                console.log("code", code);
+                // code is an array of notes
+                const codeObj = JSON.parse(code);
+                // clear song
+                clearTrack();
+                setTempo(codeObj.bpm);
+
+                for (const note of codeObj.notes) {
+                    const audio = document.querySelector(
+                        `audio[src="${note.audioSrc}"]`
+                    );
+                    const ms = note.fraction * msPerBeat;
+                    programNote(audio, note.measure, note.beat, ms);
+                }
+            };
+
             const startPlaying = () => {
                 // console.log("startPlaying()");
                 isPlaying = true;
@@ -687,7 +732,7 @@ Y8888D' 88   YD ~Y8888P' YP  YP  YP      YP  YP  YP YP   YP  `Y88P' YP   YP Y888
                 ).innerHTML = `measure ${currentMeasure}
                 beat ${currentBeat}
                 ms ${Math.round(currentMS)}`;
-            }
+            };
 
             /*
 
@@ -1009,15 +1054,20 @@ Y8b  d8 `8b  d8' 88  V888    88    88 `88. `8b  d8' 88booo. db   8D
                 track.startXY = { x, y };
                 track.marquis.classList.add("on");
                 track.drawMarquis({ x, y }, { x, y });
+                if (track.setCapture) {
+                    track.setCapture();
+                }
             });
-            track.addEventListener("pointerup", (event) => {
+            document.addEventListener("pointerup", (event) => {
+                // track.addEventListener("pointerup", (event) => {
                 // console.log("click track");
                 if (!track.marquis.classList.contains("on")) return;
                 track.pointerdown = false;
                 track.marquis.classList.remove("on");
 
                 // Get the bounding rectangle of target
-                const rect = event.currentTarget.getBoundingClientRect();
+                // const rect = event.currentTarget.getBoundingClientRect();
+                const rect = track.getBoundingClientRect();
 
                 // Mouse position
                 const x = event.clientX - rect.left;
@@ -1026,6 +1076,10 @@ Y8b  d8 `8b  d8' 88  V888    88    88 `88. `8b  d8' 88booo. db   8D
                 track.marquisBeats(track.startXY, { x, y });
 
                 // remove marquis
+
+                if (track.releaseCapture) {
+                    track.releaseCapture();
+                }
             });
 
             track.addEventListener("pointermove", (event) => {
@@ -1106,6 +1160,50 @@ Y8b  d8 `8b  d8' 88  V888    88    88 `88. `8b  d8' 88booo. db   8D
                 .querySelector("#help .close")
                 .addEventListener("pointerdown", (event) => {
                     toggleHelp();
+                });
+
+            document
+                .getElementById("get-code-button")
+                .addEventListener("pointerdown", (event) => {
+                    // copy JSON to clipboard
+                    // create array of notes - measure, beat, fraction, and relative audio src path
+                    const notes = [];
+                    for (const measure of song) {
+                        // console.log("measure", measure);
+                        if (measure !== undefined) {
+                            for (const beat of measure) {
+                                // console.log("beat", beat);
+                                if (beat !== undefined) {
+                                    for (const note of beat) {
+                                        // console.log('note',note);
+                                        notes.push({
+                                            audioSrc:
+                                                note.audio.getAttribute("src"),
+                                            measure: note.measure,
+                                            beat: note.beat,
+                                            fraction: note.fraction,
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    const songCode = {
+                        bpm,
+                        notes,
+                    };
+                    // console.log("notes", notes);
+                    const codeJson = JSON.stringify(songCode);
+                    // console.log(codeJson);
+                    // Copy the text inside the text field
+                    navigator.clipboard.writeText(codeJson);
+                });
+            document
+                .getElementById("enter-code-button")
+                .addEventListener("pointerdown", (enter) => {
+                    const jsonCode =
+                        document.getElementById("code-input").value;
+                    buildSongFromSongCode(jsonCode);
                 });
 
             buildTrack();
@@ -1230,6 +1328,11 @@ Y8b  d8 `8b  d8' 88  V888    88    88 `88. `8b  d8' 88booo. db   8D
                     "Track",
                     "Recorded notes are displayed here. Select, move and cut notes while Edit or Record mode are on.",
                 ],
+                ["Copy Track", "Copy the track code to clipboard."],
+                [
+                    "Build Track From Code",
+                    "Paste code and press 'Enter Code' button.",
+                ],
             ]);
             // Change 'steps' to object format:
             /*
@@ -1261,6 +1364,8 @@ Y8b  d8 `8b  d8' 88  V888    88    88 `88. `8b  d8' 88booo. db   8D
                     // '?'
                     // help
                     toggleHelp();
+                } else if (event.code === "Escape") {
+                    megaWalkthrough.hide();
                 }
             });
         </script>

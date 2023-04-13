@@ -542,3 +542,81 @@ section#help .close {
     right: 1rem;
     /* border: 2px solid #888; */
 }
+#code-controls {
+    position: relative;
+    margin:2rem 0;
+    padding: 1rem;
+}
+#code-controls::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top:0;
+    right:0;
+    bottom:0;
+    box-shadow: -0.25rem -0.5rem 1rem #ede0ff, 0.25rem 0.5rem 1rem #1a1123, inset 1rem 1rem 1rem -1rem #ede0ff, inset -0.25rem -0.5rem 1rem -1rem #1a1123;
+    mix-blend-mode: soft-light;
+    user-select: none;
+    pointer-events: none;
+}
+#code-controls button {
+    --color: goldenrod;
+    --hilight: #ffeb7a;
+    --shadow: #4c2000;
+
+    position:relative;
+    font-size: 0.7rem;
+    background-color: #c18b00;
+    color:#ffeb7a;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.4rem;
+    border: 1px solid goldenrod;
+    /* border-top-color: gold; */
+    box-shadow: inset 0.1rem 0.2rem 0.2rem rgb(255, 230, 86), inset -0.1rem -0.2rem 0.2rem #4c2000;
+    text-shadow: -0.1rem -0.1rem 0.2rem #4c2000;
+}
+#code-controls button::after {
+    content: "";
+    position:absolute;
+    left:0;
+    top:0;
+    width:100%;
+    height:100%;
+    border-radius: 0.4rem;
+    box-shadow: 0.5rem 0.5rem 0.5rem  rgba(0,0,0,0.5);
+    mix-blend-mode: multiply;
+    /* background-color:pink; */
+}
+#code-controls button::before {
+    box-shadow: 0.2rem 0.2rem 0.3rem -0.1rem rgba(0,0,0,0.5);
+    mix-blend-mode: multiply;
+    content: "";
+    border-radius: 0.4rem;
+    position: absolute;
+    top: 0;
+    right: -1px;
+    left: 0;
+    bottom: -1px;
+}
+#code-controls button:hover {
+    color:white;
+}
+#code-controls button:hover::after {
+    box-shadow: 0.5rem 0.5rem 0.5rem  rgba(0,0,0,0.5), 0 0 1rem  white;
+    mix-blend-mode:unset;
+}
+#code-controls button#get-code-button {
+    margin-right: 3rem;
+}
+#code-controls input {
+    margin-right: 0.5rem;
+    background-color: rgba(0,0,0,0.5);
+    color: white;
+    font-family:monospace;
+    padding: 0.25em;
+    padding-bottom: 0.5em;
+    border-radius: 0.2rem;
+    box-shadow: inset 0.1rem 0.2rem 0.2rem rgba(0,0,0,0.5);
+    /* text-shadow: 0.3rem 0.3rem 0.5rem black; */
+}
+
