@@ -709,7 +709,7 @@ Y8888D' 88   YD ~Y8888P' YP  YP  YP      YP  YP  YP YP   YP  `Y88P' YP   YP Y888
                 // clear song
                 clearTrack();
                 setTempo(codeObj.bpm);
-
+                setMeasures(codeObj.measures);
                 for (const note of codeObj.notes) {
                     const audio = document.querySelector(
                         `audio[src="${note.audioSrc}"]`
@@ -1190,6 +1190,7 @@ Y8b  d8 `8b  d8' 88  V888    88    88 `88. `8b  d8' 88booo. db   8D
                     }
                     const songCode = {
                         bpm,
+                        measures,
                         notes,
                     };
                     // console.log("notes", notes);
@@ -1304,7 +1305,7 @@ Y8b  d8 `8b  d8' 88  V888    88    88 `88. `8b  d8' 88booo. db   8D
                 ],
                 [
                     "Beat Light",
-                    "This flashes on the beat while the track is playing or recording.",
+                    "Press Spacebar to play.  This light flashes on the beat while the track is playing or recording.",
                 ],
                 [
                     "Record",
@@ -1313,7 +1314,7 @@ Y8b  d8 `8b  d8' 88  V888    88    88 `88. `8b  d8' 88booo. db   8D
                 ["Cut", "Press 'X' (or backspace) to remove selected notes."],
                 [
                     "Quantize",
-                    "Press 'Q' to toggle quantize mode. This snaps notes to the closest beat",
+                    "Press 'Q' to toggle quantize mode, snapping notes to the closest beat.",
                 ],
                 [
                     "Edit",
