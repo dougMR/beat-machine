@@ -24,7 +24,8 @@
     <body>
         <div class="mega-drum-machine">
             <header>
-                <span class="title">BeatMachine</span>
+                <span class="title">BeatMachine</span>by
+                <span class="signature">megaDoug</span>
             </header>
             <main>
                 <div id="help-icon" data-mega-step="0">?</div>
@@ -134,7 +135,8 @@
                             <span class="sound">cb muted</span>
                         </div>
                     </div>
-
+                </div>
+                <div id="track-tools">
                     <div id="code-controls">
                         <button id="get-code-button" data-mega-step="10">
                             Get Code
@@ -150,25 +152,11 @@
                             /><button id="enter-code-button">Enter Code</button>
                         </fieldset>
                     </div>
-                    <div
-                        id="counter"
-                        style="
-                            display: none;
-                            background-color: rgba(0, 0, 0, 0.5);
-                            color: #999;
-                            padding: 0.25rem 0.5rem;
-                            /* opacity: 0.5; */
-                            font-family: monospace;
-                            font-size: 0.8rem;
-                            border-radius: 0 0 0.5rem 0.5rem;
-                            letter-spacing: 0.05em;
-                            box-shadow: inset 0.5rem 0.5rem 0.3rem -0.3rem rgba(0, 0, 0, 0.5);
-                            user-select: none;
-                            /* border: 2px solid black; */
-                        "
-                    >
-                        &nbsp;
+                    <div id="edit-buttons">
+                        <button id="copy-notes" class="edit-button">C</button>
+                        <button id="paste-notes" class="edit-button">V</button>
                     </div>
+                    <div><div id="counter">&nbsp;</div></div>
                 </div>
                 <div id="track" data-mega-step="9">
                     <div id="beats"></div>
@@ -176,6 +164,7 @@
                     <div id="beat-icons"></div>
                     <div id="marquis"></div>
                 </div>
+
                 <section id="help">
                     <ul>
                         <li><kbd>R</kbd> - record</li>
@@ -187,7 +176,9 @@
                     <div class="close">x</div>
                 </section>
             </main>
-            <footer>by <span class="signature">megaDoug</span></footer>
+            <footer>
+                <p>vanilla <span class="signature">JavaScript</span></p>
+            </footer>
 
             <!-- Sounds -->
             <audio data-key="65" src="./sounds/clap.wav"></audio>
@@ -206,14 +197,14 @@
         <script>
             /*
 
-d8888b. d8888b. db    db .88b  d88.      .88b  d88.  .d8b.   .o88b. db   db d888888b d8b   db d88888b 
-88  `8D 88  `8D 88    88 88'YbdP`88      88'YbdP`88 d8' `8b d8P  Y8 88   88   `88'   888o  88 88'     
-88   88 88oobY' 88    88 88  88  88      88  88  88 88ooo88 8P      88ooo88    88    88V8o 88 88ooooo 
-88   88 88`8b   88    88 88  88  88      88  88  88 88~~~88 8b      88~~~88    88    88 V8o88 88~~~~~ 
-88  .8D 88 `88. 88b  d88 88  88  88      88  88  88 88   88 Y8b  d8 88   88   .88.   88  V888 88.     
-Y8888D' 88   YD ~Y8888P' YP  YP  YP      YP  YP  YP YP   YP  `Y88P' YP   YP Y888888P VP   V8P Y88888P
+            d8888b. d8888b. db    db .88b  d88.      .88b  d88.  .d8b.   .o88b. db   db d888888b d8b   db d88888b
+            88  `8D 88  `8D 88    88 88'YbdP`88      88'YbdP`88 d8' `8b d8P  Y8 88   88   `88'   888o  88 88'
+            88   88 88oobY' 88    88 88  88  88      88  88  88 88ooo88 8P      88ooo88    88    88V8o 88 88ooooo
+            88   88 88`8b   88    88 88  88  88      88  88  88 88~~~88 8b      88~~~88    88    88 V8o88 88~~~~~
+            88  .8D 88 `88. 88b  d88 88  88  88      88  88  88 88   88 Y8b  d8 88   88   .88.   88  V888 88.
+            Y8888D' 88   YD ~Y8888P' YP  YP  YP      YP  YP  YP YP   YP  `Y88P' YP   YP Y888888P VP   V8P Y88888P
 
-            */
+                        */
             // ======================
             //   DRUM MACHINE
             // ======================
@@ -240,6 +231,7 @@ Y8888D' 88   YD ~Y8888P' YP  YP  YP      YP  YP  YP YP   YP  `Y88P' YP   YP Y888
             const playhead = document.getElementById("playhead");
             const track = document.getElementById("track");
             track.marquis = track.querySelector("#marquis");
+            track.clipboardNotes = [];
             const beatIcons = document.getElementById("beat-icons");
             const tempoSlider = document.getElementById("tempo-slider");
             const measureSlider = document.getElementById("measures-slider");
@@ -319,7 +311,7 @@ Y8888D' 88   YD ~Y8888P' YP  YP  YP      YP  YP  YP YP   YP  `Y88P' YP   YP Y888
                     `audio[data-key="${event.keyCode}"]`
                 );
                 if (audio) {
-                    // If recording, record note
+                    // If recording or editing, record note
                     if (isRecording || isEditing) {
                         programNote(
                             audio,
@@ -327,16 +319,15 @@ Y8888D' 88   YD ~Y8888P' YP  YP  YP      YP  YP  YP YP   YP  `Y88P' YP   YP Y888
                             currentBeat,
                             currentMS
                         );
-                    } 
-                    
-                        // play note
-                        const key = document.querySelector(
-                            `.key[data-key="${event.keyCode}"]`
-                        );
+                    }
 
-                        playSound(audio);
-                        key.classList.add("playing");
-                   
+                    // play note
+                    const key = document.querySelector(
+                        `.key[data-key="${event.keyCode}"]`
+                    );
+
+                    playSound(audio);
+                    key.classList.add("playing");
                 }
             };
 
@@ -382,7 +373,7 @@ Y8888D' 88   YD ~Y8888P' YP  YP  YP      YP  YP  YP YP   YP  `Y88P' YP   YP Y888
             // =============================================
 
             const positionBeatIcon = (note) => {
-                // console.log("position beat icon note", note);
+                console.log("position beat icon note", note);
                 if (!note.beatIcon) return;
                 // x position
                 const totalBeats = note.measure * 4 + note.beat + note.fraction;
@@ -460,6 +451,7 @@ Y8888D' 88   YD ~Y8888P' YP  YP  YP      YP  YP  YP YP   YP  `Y88P' YP   YP Y888
                 //     `programNote(${audio.src},${measure},${beat},${ms})`
                 // );
                 // console.log("msPerBeat", msPerBeat);
+                // console.log('typeof audio',typeof audio);
                 let beatIcon = null;
                 if (audio.id != "tick") {
                     beatIcon = makeBeatIcon();
@@ -730,26 +722,26 @@ Y8888D' 88   YD ~Y8888P' YP  YP  YP      YP  YP  YP YP   YP  `Y88P' YP   YP Y888
                 document.getElementById(
                     "counter"
                 ).innerHTML = `measure ${currentMeasure}
-                beat ${currentBeat}
-                ms ${Math.round(currentMS)}`;
+                            beat ${currentBeat}
+                            ms ${Math.round(currentMS)}`;
             };
 
             /*
 
-                                                                                                  
- ad88888ba                                     88                                                 
-d8"     "8b  ,d                                88                                                 
-Y8,          88                                88                                                 
-`Y8aaaaa,  MM88MMM  ,adPPYba,  8b,dPPYba,      88           ,adPPYba,    ,adPPYba,   8b,dPPYba,   
-  `"""""8b,  88    a8P_____88  88P'    "8a     88          a8"     "8a  a8"     "8a  88P'    "8a  
-        `8b  88    8PP"""""""  88       d8     88          8b       d8  8b       d8  88       d8  
-Y8a     a8P  88,   "8b,   ,aa  88b,   ,a8"     88          "8a,   ,a8"  "8a,   ,a8"  88b,   ,a8"  
- "Y88888P"   "Y888  `"Ybbd8"'  88`YbbdP"'      88888888888  `"YbbdP"'    `"YbbdP"'   88`YbbdP"'   
-                               88                                                    88           
-                               88                                                    88  
+
+             ad88888ba                                     88
+            d8"     "8b  ,d                                88
+            Y8,          88                                88
+            `Y8aaaaa,  MM88MMM  ,adPPYba,  8b,dPPYba,      88           ,adPPYba,    ,adPPYba,   8b,dPPYba,
+              `"""""8b,  88    a8P_____88  88P'    "8a     88          a8"     "8a  a8"     "8a  88P'    "8a
+                    `8b  88    8PP"""""""  88       d8     88          8b       d8  8b       d8  88       d8
+            Y8a     a8P  88,   "8b,   ,aa  88b,   ,a8"     88          "8a,   ,a8"  "8a,   ,a8"  88b,   ,a8"
+             "Y88888P"   "Y888  `"Ybbd8"'  88`YbbdP"'      88888888888  `"YbbdP"'    `"YbbdP"'   88`YbbdP"'
+                                           88                                                    88
+                                           88                                                    88
 
 
-            */
+                        */
             function step(timestamp) {
                 if (startTime === -1) startTime = timestamp;
                 elapsed = timestamp - startTime;
@@ -832,15 +824,15 @@ Y8a     a8P  88,   "8b,   ,aa  88b,   ,a8"     88          "8a,   ,a8"  "8a,   ,
 
             /*
 
- .o88b.  .d88b.  d8b   db d888888b d8888b.  .d88b.  db      .d8888. 
-d8P  Y8 .8P  Y8. 888o  88 `~~88~~' 88  `8D .8P  Y8. 88      88'  YP 
-8P      88    88 88V8o 88    88    88oobY' 88    88 88      `8bo.   
-8b      88    88 88 V8o88    88    88`8b   88    88 88        `Y8b. 
-Y8b  d8 `8b  d8' 88  V888    88    88 `88. `8b  d8' 88booo. db   8D 
- `Y88P'  `Y88P'  VP   V8P    YP    88   YD  `Y88P'  Y88888P `8888Y' 
-                                                                                                                
+             .o88b.  .d88b.  d8b   db d888888b d8888b.  .d88b.  db      .d8888.
+            d8P  Y8 .8P  Y8. 888o  88 `~~88~~' 88  `8D .8P  Y8. 88      88'  YP
+            8P      88    88 88V8o 88    88    88oobY' 88    88 88      `8bo.
+            8b      88    88 88 V8o88    88    88`8b   88    88 88        `Y8b.
+            Y8b  d8 `8b  d8' 88  V888    88    88 `88. `8b  d8' 88booo. db   8D
+             `Y88P'  `Y88P'  VP   V8P    YP    88   YD  `Y88P'  Y88888P `8888Y'
 
-            */
+
+                        */
             // =======================
             //   CONTROLS
             // =======================
@@ -1040,10 +1032,8 @@ Y8b  d8 `8b  d8' 88  V888    88    88 `88. `8b  d8' 88booo. db   8D
             };
 
             track.addEventListener("pointerdown", (event) => {
-                console.log("click track");
                 if (draggingPlayhead || !isEditing) return;
                 track.pointerdown = true;
-
                 // Get the bounding rectangle of target
                 const rect = event.currentTarget.getBoundingClientRect();
 
@@ -1083,7 +1073,9 @@ Y8b  d8 `8b  d8' 88  V888    88    88 `88. `8b  d8' 88booo. db   8D
             });
 
             track.addEventListener("pointermove", (event) => {
+                // console.log(track.pointerdown);
                 if (track.pointerdown) {
+                    // console.log("dragging on track");
                     // Get the bounding rectangle of target
                     const rect = event.currentTarget.getBoundingClientRect();
 
@@ -1156,11 +1148,97 @@ Y8b  d8 `8b  d8' 88  V888    88    88 `88. `8b  d8' 88booo. db   8D
                 }
             });
 
+            // COPY / PASTE NOTES
+            document
+                .getElementById("copy-notes")
+                .addEventListener("pointerdown", (event) => {
+                    // Copy selected Notes
+                    const selectedIcons = Array.from(
+                        beatIcons.querySelectorAll(".beat-icon.selected")
+                    );
+                    track.clipboardNotes.length = 0;
+                    for (const icon of selectedIcons) {
+                        const note = getNoteFromBeatIcon(icon);
+                        console.log('note: ',note);
+                        track.clipboardNotes.push(note);
+                    }
+                    // track.clipboardNotes = [...selectedIcons];
+                });
+            document
+                .getElementById("paste-notes")
+                .addEventListener("pointerdown", (event) => {
+                    // Paste notes from clipboard
+                    console.log('paste notes from clipboard...');
+                    console.log('track.clipboardNotes: ',track.clipboardNotes);
+                    const getNoteTotalMS= (note) => {
+                        return note.measure * 4 * msPerBeat +
+                        note.beat * msPerBeat +
+                        note.fraction * msPerBeat;
+                    }
+                    const getMeasureBeatMSfromMS = (ms) => {
+                        console.log('getMeasureBeatMSfromMS()');
+                        console.log(ms);
+                        const measure = Math.floor(ms / (msPerBeat*4)) % measures;
+                        const beat = Math.floor(ms / msPerBeat) % 4;
+                        ms = ms % msPerBeat;
+                        console.log('measure',measure);
+                        console.log('beat',beat);
+                        console.log('ms',ms);
+                        return {
+                            measure,
+                            beat,
+                            ms
+                        }
+                    }
+                    const msToPx = (ms) => {
+                        const pxPerMS = track.trackWidth / track.duration;
+                        return pxPerMS * ms;
+                    }
+                    const getPlayheadMS = () => {
+                        // console.log('getPlayheadMS()');
+                        // console.log('playhead',playhead);
+                        // console.log('playhead.offsetLeft',playhead.offsetLeft);
+                        const playheadX = playhead.offsetLeft;
+                        return (playheadX / track.trackWidth) * track.duration;
+                    }
+
+                    // sort left to right
+                    track.clipboardNotes.sort((A, B) => {
+                        return getNoteTotalMS(A) - getNoteTotalMS(B);
+                    });
+
+                    const leftmostNote = track.clipboardNotes[0];
+                    const leftmostTotalMS = getNoteTotalMS(leftmostNote);
+                    const playheadMS = getPlayheadMS();
+
+                    for (const note of track.clipboardNotes) {
+                        const relativeMS = getNoteTotalMS(note) - leftmostTotalMS;
+                        const relativePX = msToPx(relativeMS);
+                        const noteMS = ( playheadMS + relativeMS ) % track.duration;
+                        // console.log('playheadMS',playheadMS);
+                        // console.log('relativeMS',relativeMS);
+                        // console.log('track.duration',track.duration);
+                        const nextMBMS = getMeasureBeatMSfromMS(noteMS);
+                        // console.log('note: ',note);
+                        programNote(
+                            note.audio,
+                            nextMBMS.measure,
+                            nextMBMS.beat,
+                            nextMBMS.ms
+                        );
+                    }
+                    track.deselectBeats();
+                });
+
+            // HELP
+
             document
                 .querySelector("#help .close")
                 .addEventListener("pointerdown", (event) => {
                     toggleHelp();
                 });
+
+            // GET / PASTE TRACK CODE
 
             document
                 .getElementById("get-code-button")
@@ -1211,19 +1289,19 @@ Y8b  d8 `8b  d8' 88  V888    88    88 `88. `8b  d8' 88booo. db   8D
 
             /*
 
-888888888888                             88                            
-     88                           ,d     ""                            
-     88                           88                                   
-     88   ,adPPYba,  ,adPPYba,  MM88MMM  88  8b,dPPYba,    ,adPPYb,d8  
-     88  a8P_____88  I8[    ""    88     88  88P'   `"8a  a8"    `Y88  
-     88  8PP"""""""   `"Y8ba,     88     88  88       88  8b       88  
-     88  "8b,   ,aa  aa    ]8I    88,    88  88       88  "8a,   ,d88  
-     88   `"Ybbd8"'  `"YbbdP"'    "Y888  88  88       88   `"YbbdP"Y8  
-                                                           aa,    ,88  
-                                                            "Y8bbdP"   
+            888888888888                             88
+                 88                           ,d     ""
+                 88                           88
+                 88   ,adPPYba,  ,adPPYba,  MM88MMM  88  8b,dPPYba,    ,adPPYb,d8
+                 88  a8P_____88  I8[    ""    88     88  88P'   `"8a  a8"    `Y88
+                 88  8PP"""""""   `"Y8ba,     88     88  88       88  8b       88
+                 88  "8b,   ,aa  aa    ]8I    88,    88  88       88  "8a,   ,d88
+                 88   `"Ybbd8"'  `"YbbdP"'    "Y888  88  88       88   `"YbbdP"Y8
+                                                                       aa,    ,88
+                                                                        "Y8bbdP"
 
 
-*/
+            */
 
             // TESTING V
 
