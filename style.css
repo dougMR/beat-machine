@@ -8,6 +8,26 @@ body {
     /* border: 10px solid grey;
     box-sizing: border-box; */
 }
+
+button {
+    font-size: 1.25rem;
+    color: #333;
+    border-radius: 0.25rem;
+    border: none;
+    /* padding: 0.25rem 0.5rem; */
+    background-color: #ddd;
+    /* mix-blend-mode: overlay; */
+    box-shadow: inset 0 0 0.5rem -0.2rem black;
+}
+button.on {
+    /* border: 2px solid lime; */
+    font-weight: bold;
+    color: black;
+    background-color: white;
+    text-shadow: 0 0 0.1em limegreen;
+    box-shadow: 0 0 0.5rem limegreen, inset 0 0 0.5rem limegreen;
+}
+
 .mega-drum-machine {
     height: 100%;
     display: flex;
@@ -21,7 +41,7 @@ body {
     font-family: sans-serif;
     font-size: 0.6rem;
     color: #888;
-    padding: 3rem 1rem 1rem;
+    padding: 1rem 2rem 0rem;
 }
 .mega-drum-machine header {
     border-bottom: 2px solid #564e86;
@@ -74,6 +94,7 @@ body {
     /* color: #888; */
 }
 .mega-drum-machine footer {
+    display: none;
     text-align: right;
     font-family: sans-serif;
     font-weight: 200;
@@ -87,6 +108,8 @@ body {
     justify-content: space-between;
     position: relative;
     box-sizing: border-box;
+    --bevel-size: 10px;
+    padding: var(--bevel-size);
     flex-grow: 2;
     background-color: #999;
     --light: #999;
@@ -110,7 +133,18 @@ body {
         );
     background-blend-mode: soft-light;
     --track-height: 30vh;
-    box-shadow: inset 0 0 15rem 1rem black, inset 0 0 10rem 1rem black;
+    box-shadow: inset 0 0 5rem 1rem black, inset 0 0 10rem 1rem black;
+    /* box-shadow: inset var(--bevel-size)  var(--bevel-size) calc(2 * var(--bevel-size)) calc(-1 * var(--bevel-size)) black, inset calc(-1 * var(--bevel-size)) calc(-1 * var(--bevel-size)) calc(2 * var(--bevel-size)) calc(-1 * var(--bevel-size)) white; */
+   /* box-shadow: inset calc(0.4 * var(--bevel-size)) calc(0.4 * var(--bevel-size)) calc(0.4 * var(--bevel-size))  white,
+        inset calc(-0.4 * var(--bevel-size)) calc(-0.4 * var(--bevel-size)) calc(0.4 * var(--bevel-size)) black, 
+        inset 0 0 calc(0.4 * var(--bevel-size)) calc(0.6 * var(--bevel-size)) rgb(137, 137, 137),
+        inset var(--bevel-size)  var(--bevel-size) calc(0.4 * var(--bevel-size)) black, 
+        inset calc(-1 * var(--bevel-size)) calc(-1 * var(--bevel-size)) calc(0.4 * var(--bevel-size)) white,
+        inset 0 0 15rem 1rem black,
+        inset 0 0 10rem 1rem black;
+        border-top: 0.2rem solid black;
+        border-bottom: 0.2rem solid black; */
+    /* box-shadow: inset -3rem -3rem 2rem -2rem black, inset 3rem 3rem 2rem -2rem white, inset 0 0 0.1rem 3rem #888; */
     --beforeBG: transparent;
     --beforeBG-outer: transparent;
     --h-pct: 70%;
@@ -134,12 +168,13 @@ body {
         var(--beforeBG) var(--inner-pct),
         var(--beforeBG-outer) var(--outer-pct)
     );
-    transition: background-color 0.1 s; 
+    transition: background-color 0.1 s;
 }
 .mega-drum-machine main.colored::before {
     background-color: var(--beforeBG);
     transition: background-color 0.1s;
 }
+
 #lights {
     display: flex;
     align-items: center;
@@ -155,6 +190,7 @@ body {
     border-radius: 2rem;
     border: 3px solid #111;
     transition: all 0.3s;
+    margin-bottom: 0.5rem;
 }
 .light.on {
     transition: all 0.2s;
@@ -215,7 +251,7 @@ body {
     font-size: 1.3rem;
     font-weight: 600;
     text-shadow: -0.05em -0.05em 0.1em rgba(0, 0, 0, 0.5);
-    margin-bottom: 2rem;
+    /* margin-bottom: 2rem; */
 }
 #rec-light {
     background-color: #831414;
@@ -291,7 +327,6 @@ body {
     --light: rgb(0, 81, 255);
 }
 #drumpad {
-    flex-grow: 2;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -342,11 +377,15 @@ body {
 #track {
     position: relative;
     display: block;
+    flex-grow: 2;
     width: 100%;
-    height: var(--track-height);
+    /* height: var(--track-height); */
     background-color: rgba(10, 0, 0, 0.4);
     border-top: 2px solid black;
-    box-sizing: border-box;
+    border-bottom: 2px solid black;
+    padding: 0;
+    margin: 0;
+    /* box-sizing: border-box; */
 }
 #track #marquis {
     display: none;
@@ -375,22 +414,35 @@ body {
     position: absolute;
     z-index: 10;
     bottom: 0;
-    height: var(--track-height);
-    width: 1px;
+    /* height: var(--track-height); */
+    height: 100%;
+    transition: box-shadow 0.3s;
+    /* transform: translateX(-50%); */
+    box-shadow: none;
+    /* box-sizing: border-box; */
+}
+#playhead::after {
+    /* white bar
+    parent element has to be width:0 and no borders 
+    so offsetLeft and el.style.left are same */
+    content: "";
+    position: absolute;
+    width: 2px;
+    left: -1px;
+    top: 0;
+    bottom: 0;
     border: 0.5px solid black;
     border-top: none;
     border-bottom: none;
     background-color: white;
-    transition: box-shadow 0.3s;
-    transform: translateX(-50%);
-    box-shadow: none;
 }
 #playhead::before {
+    /* Triangle above */
     content: "";
     position: absolute;
     border: 8px solid transparent;
     border-top: 16px solid white;
-    left: -7.5px;
+    left: -7px;
     top: -18px;
 }
 #playhead.on {
@@ -403,13 +455,20 @@ body {
 .beat-line {
     position: absolute;
     bottom: 0;
-    height: var(--track-height);
+    /* height: var(--track-height); */
+    height: 100%;
     width: 1px;
     background-color: #a76;
     border-left: 1px solid black;
 }
 .beat-line.up-beat {
     opacity: 0.5;
+}
+.beat-line.measure {
+    background-color: rgb(205, 152, 134);
+    width: 2px;
+    margin-left: -1px;
+    opacity: 0.7;
 }
 
 .beat-icon {
@@ -443,6 +502,7 @@ body {
     padding-bottom: 1rem;
     --slider-track-width: 16px;
     /* border: 1px solid yellow; */
+    margin-top: 0.5rem;
 }
 .slidecontainer {
     width: 30vw;
@@ -505,7 +565,8 @@ body {
 }
 
 /* HELP */
-.mega-drum-machine #help-icon {
+.mega-drum-machine #help-icon,
+.mega-drum-machine #key-help-icon {
     position: absolute;
     top: 1rem;
     right: 1rem;
@@ -522,12 +583,22 @@ body {
     font-weight: bold;
     cursor: pointer;
     user-select: none;
+    transition: box-shadow 0.25s, color 1s;
 }
-section#help {
-    display: none;
+.mega-drum-machine #key-help-icon {
+    border-radius: 0.4rem;
+    top: 3.5rem;
+}
+.mega-drum-machine #key-help-icon:hover {
+    box-shadow: 0 0 0.3rem white, inset 0 0 0.3rem white;
+    /* text-shadow: 0 0 0.3rem white; */
+    color: white;
+}
+section#help-panel {
+    display: block;
     position: absolute;
-    top: 10vh;
-    bottom: 10vh;
+    top: -5rem;
+    bottom: -1rem;
     left: 10vh;
     right: 10vh;
     padding: 2rem;
@@ -535,31 +606,57 @@ section#help {
     border-radius: 2rem;
     box-shadow: inset 1rem 1rem 1rem white, inset -1rem -1rem 1rem black;
     user-select: none;
+    z-index: 1000;
+    box-sizing: content-box;
 }
-section#help.on {
-    display: block;
-}
-section#help ul {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
+section#help-panel .holder {
+    position: relative;
+    /* border: 2px solid orange; */
+    box-sizing: border-box;
     height: 100%;
-    gap: 1.5rem;
-    font-size: 2rem;
+}
+*.hidden {
+    display: none !important;
+}
+section#help-panel h1 {
+    text-align: center;
+    font-family: "Oxanium", cursive;
+    font-size: 3rem;
+    font-weight: 200;
+    margin: -1rem 0 1rem;
+}
+section#help-panel ul {
+    /* display: flex;
+    flex-direction: column;
+    flex-wrap: wrap; */
+    /* columns: 2;
+    -webkit-columns: 2;
+    -moz-columns: 2; */
+    /* justify-content: center; */
+    /* height: 100%; */
+    gap: 1rem;
+    font-size: 1.5rem;
     font-family: sans-serif;
     list-style-type: none; /* Remove bullets */
     padding: 0; /* Remove padding */
     margin: 0; /* Remove margins */
+    columns: 2;
 }
-section#help ul li {
-    display: block;
+section#help-panel ul li {
+    display: flex;
+    align-items: center;
+    margin: 0 0 1rem;
 }
-section#help ul li kbd {
+section#help-panel ul li kbd {
+    font-size: 2rem;
     border: 2px solid #888;
     border-radius: 0.5rem;
     padding: 0.5rem 1rem;
 }
-section#help .close {
+section#help-panel ul li kbd:last-child {
+    margin-right: 1rem;
+}
+section#help-panel .close {
     position: absolute;
     font-size: 2rem;
     font-family: sans-serif;
@@ -569,24 +666,28 @@ section#help .close {
     height: 2rem;
     top: 1rem;
     right: 1rem;
+    cursor: pointer;
     /* border: 2px solid #888; */
 }
 
 #track-tools {
+    position: relative;
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: 0 1vw;
-    padding: 1rem 1rem 0;
+    padding: 0.5rem 1rem;
 }
 /* #code-controls { */
 #track-tools > * {
     display: flex;
     flex-wrap: nowrap;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
+    gap: 0.5rem;
     position: relative;
     padding: 0.5rem 1rem;
+    /* border-radius: 0.5rem; */
     flex-grow: 1;
 }
 
@@ -598,35 +699,21 @@ section#help .close {
     top: 0;
     right: 0;
     bottom: 0;
-    box-shadow: -0.25rem -0.5rem 1rem #ede0ff, 0.25rem 0.5rem 1rem #1a1123,
-        inset 1rem 1rem 1rem -1rem #ede0ff,
-        inset -0.25rem -0.5rem 1rem -1rem #1a1123;
+    border-radius: 0.5rem;
+    box-shadow:  -0.25rem -0.5rem 1rem #ede0ff, 0.25rem 0.5rem 1rem #1a1123,
+    inset 1px 1px 6px rgba(0,0,0,0.6), inset -1px -1px 5px white, inset 1rem 1rem 1rem -1rem #ede0ff,
+    inset -0.25rem -0.5rem 1rem -1rem #1a1123;
     mix-blend-mode: soft-light;
     user-select: none;
     pointer-events: none;
 }
 
-button {
-    font-size: 1.25rem;
-    color: #333;
-    border-radius: 0.25rem;
-    border: none;
-    /* padding: 0.25rem 0.5rem; */
-    background-color: #ddd;
-    /* mix-blend-mode: overlay; */
-    box-shadow: inset 0 0 0.5rem -0.2rem black;
-}
-button.on {
-    /* border: 2px solid lime; */
-    font-weight: bold;
-    color: black;
-    background-color: white;
-    text-shadow: 0 0 0.1em limegreen;
-    box-shadow: 0 0 0.5rem limegreen, inset 0 0 0.5rem limegreen;
-}
 
-#code-controls button,
-#track-tools #presets  {
+
+/* #code-controls button, */
+#track-tools #presets,
+#track-tools #lightshow,
+/* #track-tools button {
     --color: goldenrod;
     --hilight: #ffeb7a;
     --shadow: #4c2000;
@@ -638,16 +725,52 @@ button.on {
     padding: 0.25rem 0.5rem;
     border-radius: 0.4rem;
     border: 1px solid goldenrod;
-    /* border-top-color: gold; */
     box-shadow: inset 0.1rem 0.2rem 0.2rem rgb(255, 230, 86),
         inset -0.1rem -0.2rem 0.2rem #4c2000;
     text-shadow: -0.1rem -0.1rem 0.2rem #4c2000;
+} */
+#track-tools button,
+#track-tools select {
+    --color: #ffeb7a;
+    --bg-color: #c18b00;
+    --hilight: #ffe656;
+    --mid-shadow: #643319;
+    --shadow: #4c2000;
+
+    position: relative;
+    font-size: 0.7rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.4rem;
+    background-color: var(--bg-color);
+    color: var(--color);
+    border: 1px solid var(--bg-color);
+    box-shadow: inset 0.1rem 0.2rem 0.2rem var(--hilight),
+        inset -0.1rem -0.2rem 0.2rem var(--shadow),
+        0.2rem 0.1rem 0.3rem 0.1rem rgba(255, 255, 255, 0.2),
+        -0.1rem -0.2rem 0.3rem 0.1rem rgba(0, 0, 0, 0.5);
+    text-shadow: -0.1rem -0.1rem 0.2rem var(--shadow);
+    /* background-color: #4e6b98;
+    color: #b0c7fc;
+    border: 1px solid rgb(67, 87, 150);
+    box-shadow: inset 0.1rem 0.2rem 0.2rem rgb(131, 182, 219),
+        inset -0.1rem -0.2rem 0.2rem #00234c,
+        0.2rem 0.15rem 0.5rem 0.1rem rgba(255, 255, 255, 0.2),
+        -0.1rem -0.2rem 0.5rem 0.1rem rgba(0, 0, 0, 0.5);
+    text-shadow: -0.1rem -0.1rem 0.2rem #002a4c; */
 }
 
-#code-controls fieldset {
+/* #track-tools button.on {
+    background-color: rgb(135, 170, 236);
+    box-shadow: 0 0 1rem rgb(131, 168, 238);
+    color: #cde6ff;
+    border: 3px solid #1775d3;
+} */
+
+/* #code-controls fieldset {
     padding: 0;
-}
-#code-controls button::after {
+    text-align: right;
+} */
+#track-tools button::after {
     content: "";
     position: absolute;
     left: 0;
@@ -655,12 +778,12 @@ button.on {
     width: 100%;
     height: 100%;
     border-radius: 0.4rem;
-    box-shadow: 0.5rem 0.5rem 0.5rem rgba(0, 0, 0, 0.5);
+    /* box-shadow: 0.5rem 0.5rem 0.5rem rgba(0, 0, 0, 0.5); */
     mix-blend-mode: multiply;
     /* background-color:pink; */
 }
-#code-controls button::before {
-    box-shadow: 0.2rem 0.2rem 0.3rem -0.1rem rgba(0, 0, 0, 0.5);
+#track-tools button::before {
+    /* box-shadow: 0.2rem 0.2rem 0.3rem -0.1rem rgba(0, 0, 0, 0.5); */
     mix-blend-mode: multiply;
     content: "";
     border-radius: 0.4rem;
@@ -670,15 +793,19 @@ button.on {
     left: 0;
     bottom: -1px;
 }
-#code-controls button:hover {
+#track-tools button:hover,
+#track-tools button.on {
     color: white;
 }
-#code-controls button:hover::after {
-    box-shadow: 0.5rem 0.5rem 0.5rem rgba(0, 0, 0, 0.5), 0 0 1rem white;
+#track-tools button:hover::after,
+#track-tools button.on::after {
+    box-shadow: 0 0 1.5rem -0.5rem white, 0 0 1rem rgba(207, 232, 255, 0.5),
+        0.5rem 0.5rem 0.5rem rgba(0, 0, 0, 0.5);
     mix-blend-mode: unset;
 }
-#code-controls button#get-code-button {
-    margin-right: 2rem;
+#track-tools button#get-code-button,
+#track-tools button.on::after {
+    /* margin-right: 2rem; */
 }
 #track-tools #code-controls #code-input {
     font-family: monospace;
@@ -686,20 +813,62 @@ button.on {
     padding: 0.25em 0.5em;
     vertical-align: top;
     border: none;
-    margin-right: 0.5rem;
+    margin: 0 4px;
     background-color: rgba(0, 0, 0, 0.5);
     color: white;
     border-radius: 0.2rem;
     box-shadow: inset 0.1rem 0.2rem 0.2rem rgba(0, 0, 0, 0.5);
     text-shadow: 0.5rem 0.5rem 0.5rem black;
 }
-#code-controls button:first-child {
+#code-controls button:last-child {
     border-top-left-radius: 0;
     border-bottom-left-radius: 0;
 }
-#code-controls button:last-child {
+#code-controls button:first-child {
     border-top-right-radius: 0;
     border-bottom-right-radius: 0;
+}
+#track-tools .tool-panel {
+    position: relative;
+}
+#track-tools #sample-selector-panel {
+    position: absolute;
+    z-index: 100;
+    padding: 1rem;
+    border-radius: 1rem;
+    bottom: 100%;
+    left: 0;
+    max-height: 50vh;
+    width: 80vw;
+    background-color: rgba(255, 255, 255, 0.8);
+}
+#track-tools #sample-selector-panel legend {
+    text-align: center;
+    font-size: 1.5em;
+    font-weight: bold;
+    font-family: sans-serif;
+    margin-bottom: 1rem;
+}
+#track-tools #sample-selector-panel ul {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    /* columns: 2; */
+    -webkit-columns: 2;
+    -moz-columns: 2;
+    /* -webkit-column-width: 200px;
+    -moz-column-width: 200px; */
+    column-width: 12ch;
+}
+#track-tools #sample-selector-panel ul li {
+    margin: 0.25em 0;
+}
+#track-tools #sample-selector-panel ul li label {
+    margin-left: 0.5ch;
+}
+
+#track-tools #sample-selector-panel .sample-checkbox {
+    white-space: nowrap;
 }
 
 #counter {
@@ -716,5 +885,5 @@ button.on {
     user-select: none;
     /* border: 2px solid black; */
     text-align: center;
-    min-width: 20vw;
+    width: 16em;
 }

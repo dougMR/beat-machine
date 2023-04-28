@@ -53,6 +53,7 @@
 .mega-placard nav ul li {
     text-align: center;
     font-size: 1.5rem;
+    letter-spacing: -4px;
 }
 
 .mega-placard nav ul li a:after {
