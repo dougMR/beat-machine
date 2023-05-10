@@ -7,16 +7,10 @@
         <title>JS Drum Machine</title>
         <link rel="stylesheet" href="style.css" />
         <!-- fonts -->
-        <!-- <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-        <link
-            href="https://fonts.googleapis.com/css2?family=Oxanium:wght@700&display=swap"
-            rel="stylesheet"
-        /> -->
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
         <link
-            href="https://fonts.googleapis.com/css2?family=Oxanium:wght@200;600;700;800&display=swap"
+            href="https://fonts.googleapis.com/css2?family=Oxanium:wght@200;400;500;600;800&display=swap"
             rel="stylesheet"
         />
         <link rel="stylesheet" href="./mega-walkthrough/mega-walkthrough.css" />
@@ -24,7 +18,7 @@
     <body>
         <div class="mega-drum-machine">
             <header>
-                <span class="title">BeatMachine</span>by
+                <span class="title">BeatMachine</span>&nbsp;by
                 <span class="signature">megaDoug</span>
             </header>
             <main>
@@ -81,15 +75,14 @@
                         >
                             Q
                         </div>
-                        <!-- <div
+                        <div
                             id="edit-light"
                             class="light rect"
                             data-mega-step="6"
                         >
                             Edit
-                        </div> -->
+                        </div>
                     </div>
-                    <div><div id="counter">&nbsp;</div></div>
 
                     <div id="keys" data-mega-step="1">
                         <!-- <div class="key" data-key="KeyA">
@@ -137,6 +130,7 @@
                             <span class="sound">cb muted</span>
                         </div> -->
                     </div>
+                    <div><div id="counter">&nbsp;</div></div>
                 </div>
 
                 <div id="playhead-gutter"></div>
@@ -149,34 +143,23 @@
                 <div id="track-tools">
                     <!-- <div>&nbsp;</div> -->
                     <div class="tool-panel">
-                        <select name="library" id="library">
+                        <select name="library" id="library-select" data-mega-step="10">
                             <option value="">sample library</option>
-                            <option value="1">1</option>
-                            <option value="2">2</option>
                         </select>
-                    
-                        <button id="sample-selector-button">
+
+                        <button id="sample-selector-button" data-mega-step="11">
                             Samples à la carte
                         </button>
                         <div id="sample-selector-panel" class="hidden">
                             <legend>Choose up to 11 Samples</legend>
+                            <span class="close">x</span>
                             <ul>
-                               <!-- populated by drum-machine.js -->
+                                <!-- populated by drum-machine.js -->
                             </ul>
                         </div>
                     </div>
-                    <div class="tool-panel">
-                        <!-- <label for="lightshow">lightshow</label> -->
-                        <select name="lightshow" id="lightshow">
-                            <option value="-1">Lightshow</option>
-                            <option value="4">Every 1/4</option>
-                            <option value="8">Every 1/8</option>
-                            <option value="16">Every 1/16</option>
-                            <option value="0">Every 'note'</option>
-                        </select>
-                    </div>
                     <div id="code-controls">
-                        <button id="get-code-button" data-mega-step="10">
+                        <button id="get-code-button" data-mega-step="13">
                             Get Code
                         </button>
                         <!-- <fieldset
@@ -188,7 +171,7 @@
                             name="code"
                             id="code-input"
                             size="10"
-                        /><button id="enter-code-button" data-mega-step="11">
+                        /><button id="enter-code-button" data-mega-step="14">
                             Enter Code
                         </button>
                         <!-- </fieldset> -->
@@ -198,32 +181,54 @@
                         <button id="paste-notes" class="edit-button">V</button>
                     </div>
                     <div class="tool-panel">
-                        <select name="presets" id="presets" data-mega-step="20">
+                        <select
+                            name="presets"
+                            id="presets-select"
+                            data-mega-step="20"
+                        >
                             <option value="">Select a Preset</option>
-                            <option value="song-1">Beat 1</option>
-                            <option value="song-2">Beat 2</option>
-                            <option value="song-3">Beat 3</option>
-                            <option value="song-4">Beat 4</option>
-                            <option value="song-5">Beat 5</option>
-                            <option value="song-6">Beat 6</option>
+                        </select>
+                    </div>
+                    <div class="tool-panel">
+                        <!-- <label for="lightshow">lightshow</label> -->
+                        <select name="quantize-frequency" id="quantize-frequency" data-mega-step="12">
+                            <option value="-1">Quantize precision</option>
+                            <option value="4">1/4 note</option>
+                            <option value="8">8th note</option>
+                            <option value="16">16th note</option>
+                        </select>
+                    </div>
+                    <div class="tool-panel">
+                        <!-- <label for="lightshow">lightshow</label> -->
+                        <select name="lightshow" id="lightshow" data-mega-step="12">
+                            <option value="-1">Lightshow</option>
+                            <option value="-1">None</option>
+                            <option value="4">Every 1/4</option>
+                            <option value="8">Every 1/8</option>
+                            <option value="16">Every 1/16</option>
+                            <option value="0">Every 'note'</option>
                         </select>
                     </div>
                     <!-- <div>&nbsp;</div> -->
                 </div>
-                <section id="help-panel" class="hidden">
+                <section id="keys-help-panel" class="hidden">
                     <div class="holder">
                         <h1>Keys</h1>
                         <ul>
                             <li><kbd>R</kbd> record</li>
                             <li><kbd>Spacebar</kbd> play</li>
                             <li><kbd>0</kbd> rewind track</li>
-                            <li><kbd>Q</kbd> quantize (nearest beat)</li>
-                            <!-- <li><kbd>E</kbd> edit</li> -->
+                            <li><kbd>E</kbd> edit</li>
                             <li><kbd>X</kbd> delete selected notes</li>
                             <li><kbd>C</kbd> copy selected notes</li>
                             <li><kbd>V</kbd> paste copied notes</li>
-                            <li><kbd>?</kbd> walkthrough help</li>
-                            <li><kbd>A</kbd>-><kbd>L</kbd> play samples</li>
+                            <li><kbd>?</kbd> walk-through help</li>
+                            <li>
+                                <kbd>A</kbd
+                                ><span class="dash">&nbsp;->&nbsp;</span
+                                ><kbd>L</kbd> trigger samples
+                            </li>
+                            <li><kbd>Q</kbd> quantize (nearest beat)</li>
                         </ul>
                         <div class="close">x</div>
                     </div>
@@ -234,7 +239,7 @@
             </footer>
 
             <!-- Sounds -->
-            <section class="sample-library" data-lib="1">
+            <section class="sample-library" data-lib="standard">
                 <audio data-sample="clap" src="./sounds/clap.wav"></audio>
                 <audio data-sample="hihat" src="./sounds/hihat.wav"></audio>
                 <audio data-sample="kick" src="./sounds/kick.wav"></audio>
@@ -251,7 +256,7 @@
                 ></audio>
             </section>
             <audio id="tick" src="./sounds/metronone-tick.wav"></audio>
-            <section class="sample-library" data-lib="2">
+            <section class="sample-library" data-lib="joe's">
                 <audio
                     data-sample="Snare Short"
                     src="./sounds/joe-drums/Snare_Short.m4a"
@@ -277,12 +282,53 @@
                     src="./sounds/joe-drums/Ride_Bell_Long.m4a"
                 ></audio>
             </section>
+            <section class="sample-library" data-lib="beatbox">
+                <audio
+                    data-sample="snare back"
+                    src="./sounds/beatbox/beatbox_BackwardsSnare.wav"
+                ></audio>
+                <audio
+                    data-sample="kick explode"
+                    src="./sounds/beatbox/beatbox_KickExplosive.wav"
+                ></audio>
+                <audio
+                    data-sample="tick"
+                    src="./sounds/beatbox/beatbox_Tick.wav"
+                ></audio>
+                <audio
+                    data-sample="yo"
+                    src="./sounds/beatbox/beatbox_Yo.wav"
+                ></audio>
+                <audio
+                    data-sample="bass haich"
+                    src="./sounds/beatbox/beatboxBassHaitch.wav"
+                ></audio>
+                <audio
+                    data-sample="hic"
+                    src="./sounds/beatbox/beatboxHic.wav"
+                ></audio>
+                <audio
+                    data-sample="kick"
+                    src="./sounds/beatbox/beatboxKick.wav"
+                ></audio>
+                <audio
+                    data-sample="kick hic"
+                    src="./sounds/beatbox/beatboxKickHic.wav"
+                ></audio>
+                <audio
+                    data-sample="rim"
+                    src="./sounds/beatbox/beatboxRim.wav"
+                ></audio>
+            </section>
         </div>
         <script src="./drum-machine.js"></script>
         <script src="./mega-walkthrough/mega-walkthrough.js"></script>
         <script>
             megaWalkthrough.setCopy([
-                ["Help", "Press '?' to toggle Help."],
+                [
+                    "Help",
+                    "Select (?) icon for help walk-through. <br><br> Select [?] icon for keyboard commands.",
+                ],
                 [
                     "Drum Pad",
                     "Each sample corresponds to a key on the keyboard.  Try it out!",
@@ -300,10 +346,10 @@
                     "Quantize",
                     "Press 'Q' to toggle quantize mode, snapping notes to the closest beat.",
                 ],
-                // [
-                //     "Edit",
-                //     "Press 'E' to toggle Edit mode.  In edit mode, you can select, move and delete notes.",
-                // ],
+                [
+                    "Edit",
+                    "Press 'E' to toggle Edit mode.  In edit mode, you can select, move and delete notes.",
+                ],
                 ["Tempo", "Drag slider to set beats-per-minute."],
                 [
                     "Measures",
@@ -311,21 +357,30 @@
                 ],
                 [
                     "Track",
-                    "Recorded notes are displayed here. Select, move and cut notes while Edit or Record mode are on.",
+                    "Recorded notes are displayed here. Select, move and cut notes.",
                 ],
-                ["Copy Track", "Copy the track code to clipboard."],
+                [
+                    "Sample Libraries",
+                    "Select a library to activate set of samples.",
+                ],
+                [
+                    "Samples À La Carte",
+                    "Open a list of samples to choose from.",
+                ],
+                [
+                    "Lightshow",
+                    "Choose a lightshow to accompany your track.",
+                ],
+                ["Copy Track", "Copy the track's code to clipboard."],
                 [
                     "Build Track From Code",
                     "Paste code and press 'Enter Code' button.",
                 ],
                 [
                     "Copy / Paste",
-                    "Use these buttons or 'C' and 'V' keys to copy / paste notes."
+                    "Use these buttons or 'C' and 'V' keys to copy / paste notes.",
                 ],
-                [
-                    "Select Preset Beat",
-                    "Some preset beats to choose from."
-                ]
+                ["Select Preset Beat", "Some beats to choose from."],
             ]);
             // Change 'steps' to object format:
             /*
@@ -352,7 +407,7 @@
             megaWalkthrough.start();
             megaWalkthrough.hide();
             window.addEventListener("keydown", (event) => {
-                console.log("code: ", event.code);
+                // console.log("code: ", event.code);
                 if (event.code === "Slash") {
                     // '?'
                     // help

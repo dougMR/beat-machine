@@ -1,5 +1,15 @@
-// import {song} from "./module-song.js";
-// song.hello();
+/* This Backup 2023 05 09 uses the nested arrays version of songs, where 
+the song is an array of measures,
+a measure is an array of beats,
+a beat is an array of 'notes'.
+
+Each note has {audioEl,measure,beat,fraction(of beat)}
+
+The newer version of this script just has a song as an array of notes.
+Each note has its ms (in the duration of the whole song).
+
+*/
+
 
 /*
 
@@ -55,22 +65,16 @@ Ideas to add:
 */
 const megaDrumMachine = (() => {
     const fps = 60;
-    // const msPerFrame = 1000 / 60;
-    const targetMSperFrame = 1000 / 60;
+    const msPerFrame = 1000 / 60;
     let bpm = 120;
     let msPerBeat = 60000 / bpm;
-    let msPer8th = msPerBeat * 0.5;
-    let msPer16th = msPer8th * 0.5;
     let startTime = -1;
     let elapsed;
     let measures = 2;
     let isPlaying = false;
     let currentMeasure = 0;
     let currentBeat = 0;
-    let current8th = 0;
-    let current16th = 0;
-    // let currentMS = 0;
-
+    let currentMS = 0;
     const song = [];
     const songQuantized = [];
     let quantizeOn = false;
@@ -81,7 +85,6 @@ const megaDrumMachine = (() => {
     let draggingPlayhead = false;
     let isEditing = false;
     let lightFrequency = -1;
-    let quantizePrecision = 4;
     let libraryEl = document.querySelector('section[data-library="1"');
     // -1 = none, 0 = 1/4 and all notes, 4 = 1/4, 8 = 1/8, 16 = 1/16
     const triggerKeys = [
@@ -147,7 +150,7 @@ const megaDrumMachine = (() => {
     const recLight = document.getElementById("rec-light");
     const sampleCopies = [];
 
-    /*
+/*
 
 
 .d8888.  .d8b.  .88b  d88. d8888b. db      d88888b .d8888. 
@@ -160,13 +163,15 @@ db   8D 88   88 88  88  88 88      88booo. 88.     db   8D
 
 */
 
-    // Samples
-    const allSamples = Array.from(
-        document.querySelectorAll(".sample-library audio")
-    );
+ // Samples
+ const allSamples = Array.from(
+    document.querySelectorAll(".sample-library audio")
+);
 
-    const maxSamples = 11;
-    const activeSamples = [];
+const maxSamples = 11;
+const activeSamples = [];
+
+
 
     const dupeSample = (audioEl) => {
         // console.log("dupeSample", audioEl.dataset.sample);
@@ -181,6 +186,7 @@ db   8D 88   88 88  88  88 88      88booo. 88.     db   8D
         return newAudio;
     };
     const playSampleCopy = (audioEl) => {
+        // console.log("playSampleCopy()");
         const id = parseInt(audioEl.dataset.id);
         let triggeredSample = false;
         if (sampleCopies[id]) {
@@ -199,7 +205,6 @@ db   8D 88   88 88  88  88 88      88booo. 88.     db   8D
         }
 
         if (!triggeredSample) {
-            console.log("playSampleCopy()");
             const newSample = dupeSample(audioEl);
             const tempListener = (e) => {
                 e.target.play();
@@ -210,6 +215,59 @@ db   8D 88   88 88  88  88 88      88booo. 88.     db   8D
         }
     };
 
+   
+
+
+/* 
+
+.d8888.  .d88b.  d8b   db  d888b         dD   d888888b d8888b.  .d8b.   .o88b. db   dD 
+88'  YP .8P  Y8. 888o  88 88' Y8b       d8'   `~~88~~' 88  `8D d8' `8b d8P  Y8 88 ,8P' 
+`8bo.   88    88 88V8o 88 88           d8'       88    88oobY' 88ooo88 8P      88,8P   
+  `Y8b. 88    88 88 V8o88 88  ooo     d8'        88    88`8b   88~~~88 8b      88`8b   
+db   8D `8b  d8' 88  V888 88. ~8~    d8'         88    88 `88. 88   88 Y8b  d8 88 `88. 
+`8888Y'  `Y88P'  VP   V8P  Y888P    C8'          YP    88   YD YP   YP  `Y88P' YP   YD 
+                                        
+*/
+
+    // -------------------------------
+    // Initial draw of Track view
+    // -------------------------------
+    const buildTrack = () => {
+        playheadEl.style.left = 0;
+        track.trackWidth = trackEl.offsetWidth;
+        track.duration = msPerBeat * 4 * measures;
+        drawTrack();
+    };
+
+    const drawTrack = () => {
+        const total8ths = measures * 8;
+        const pxPer8th = track.trackWidth / total8ths;
+        const beatsHolder = document.querySelector("#track #beats");
+        beatsHolder.innerHTML = "";
+        for (let eighthIndex = 0; eighthIndex < total8ths + 1; eighthIndex++) {
+            // make a new eighth-note line
+            const eighthLine = document.createElement("div");
+            eighthLine.classList.add("beat-line");
+            // if it's an up-beat, make it lighter
+            if (eighthIndex % 2 == 1) {
+                eighthLine.classList.add("up-beat");
+            }
+            // if it's a measure, make it even brighter
+            if (eighthIndex !== 0 && eighthIndex % 8 === 0) {
+                eighthLine.classList.add("measure");
+            }
+            // position line
+            eighthLine.style.left = `${pxPer8th * eighthIndex}px`;
+            beatsHolder.appendChild(eighthLine);
+        }
+    };
+
+    const redrawTrack = () => {
+        track.trackWidth = trackEl.offsetWidth;
+        drawTrack();
+        positionBeatIcons();
+        positionPlayheadByElapsed();
+    };
     // -------------------------------
     // Initial build of sample-selector view
     // -------------------------------
@@ -307,356 +365,13 @@ db   8D 88   88 88  88  88 88      88booo. 88.     db   8D
         });
     };
 
-    const getKeyFromSample = (audioEl) => {
-        return document.querySelector(`.key[data-id="${audioEl.dataset.id}"]`);
-    };
-
-    /* 
-
-.d8888.  .d88b.  d8b   db  d888b         dD   d888888b d8888b.  .d8b.   .o88b. db   dD 
-88'  YP .8P  Y8. 888o  88 88' Y8b       d8'   `~~88~~' 88  `8D d8' `8b d8P  Y8 88 ,8P' 
-`8bo.   88    88 88V8o 88 88           d8'       88    88oobY' 88ooo88 8P      88,8P   
-  `Y8b. 88    88 88 V8o88 88  ooo     d8'        88    88`8b   88~~~88 8b      88`8b   
-db   8D `8b  d8' 88  V888 88. ~8~    d8'         88    88 `88. 88   88 Y8b  d8 88 `88. 
-`8888Y'  `Y88P'  VP   V8P  Y888P    C8'          YP    88   YD YP   YP  `Y88P' YP   YD 
-                                        
-*/
-
     // -------------------------------
-    // Initial draw of Track view
-    // -------------------------------
-    const buildTrack = () => {
-        playheadEl.style.left = 0;
-        track.trackWidth = trackEl.offsetWidth;
-        track.duration = msPerBeat * 4 * measures;
-        drawTrack();
-    };
-
-    const drawTrack = () => {
-        const total8ths = measures * 8;
-        const pxPer8th = track.trackWidth / total8ths;
-        const beatsHolder = document.querySelector("#track #beats");
-        beatsHolder.innerHTML = "";
-        for (let eighthIndex = 0; eighthIndex < total8ths + 1; eighthIndex++) {
-            // make a new eighth-note line
-            const eighthLine = document.createElement("div");
-            eighthLine.classList.add("beat-line");
-            // if it's an up-beat, make it lighter
-            if (eighthIndex % 2 == 1) {
-                eighthLine.classList.add("up-beat");
-            }
-            // if it's a measure, make it even brighter
-            if (eighthIndex !== 0 && eighthIndex % 8 === 0) {
-                eighthLine.classList.add("measure");
-            }
-            // position line
-            eighthLine.style.left = `${pxPer8th * eighthIndex}px`;
-            beatsHolder.appendChild(eighthLine);
-        }
-    };
-
-    const redrawTrack = () => {
-        track.trackWidth = trackEl.offsetWidth;
-        drawTrack();
-        positionBeatIcons();
-        positionPlayheadByElapsed();
-    };
-
-    // -------------------------------
-    // Edit song
-    // -------------------------------
-
-    // ==============================
-    //
-    //    MANAGE NOTES / SONG
-    //
-    // ==============================
-
-    const recalculateNotesFractions = (factor) => {
-        for (const note of song) {
-            note.fraction *= factor;
-        }
-        for (const note of songQuantized) {
-            note.fraction *= factor;
-        }
-    };
-
-    const getNoteMS = (note) => {
-        return note.fraction * track.duration;
-    };
-
-    const removeDuplicateNotes = (note) => {
-        const noteMS = getNoteMS(note);
-        // If note of same sample already in song less than minMSdiff away,
-        // remove it and add this one.
-        const minMSdiff = 10;
-        const dupes = findSampleInSong(note.audio);
-        for (const dupe of dupes) {
-            const msDiff = Math.abs(noteMS - getNoteMS(dupe));
-
-            if (msDiff < minMSdiff) {
-                // remove dupe
-                removeNoteFromSong(dupe);
-            }
-        }
-    };
-
-    const programNote = (audio, ms) => {
-        // Create a note object and add it to song array
-        // Also create quantized note and add it to songQuantized
-
-        let beatIcon = null;
-        if (audio.id != "tick") {
-            beatIcon = makeBeatIcon();
-        }
-        // if (!song[measure]) song[measure] = [];
-        // if (!song[measure][beat]) song[measure][beat] = [];
-        const note = {
-            audio,
-            beatIcon,
-            ms,
-            fraction: ms / track.duration,
-        };
-        beatIcon.note = note;
-        removeDuplicateNotes(note);
-
-        // Add note to song
-        song.push(note);
-        const qNote = quantizeNote(note);
-        addNoteToSongQuantized(qNote);
-
-        // beatIcon.qNote = qNote;
-
-        positionBeatIcon(note);
-
-        return note;
-    };
-
-    const getNotesMSdifference = (note1, note2) => {
-        const totalMS1 = track.duration + getNoteMS(note1);
-        const totalMS2 = track.duration + getNoteMS(note2);
-        return Math.abs(totalMS1 - totalMS2);
-    };
-
-    const checkSampleInSong = (audioEl) => {
-        for (const note of song) {
-            if (note.audio === audioEl) {
-                return true;
-            }
-        }
-
-        return false;
-    };
-
-    const findSampleInSong = (audioEl) => {
-        // console.log('\r\nfindSampleInSong()',audioEl);
-        // returns array of notes
-        const matchingNotes = [];
-        // console.log('song',song);
-        for (const note of song) {
-            if (note.audio === audioEl) {
-                matchingNotes.push(note);
-            }
-        }
-        // console.log("matchingNotes", matchingNotes);
-        return matchingNotes;
-    };
-
-    const removeNotesFromSong = (notesAr) => {
-        for (const note of notesAr) {
-            removeNoteFromSong(note);
-        }
-    };
-
-    const removeNoteFromSong = (note) => {
-        let icon = note.beatIcon;
-        let noteIndex = song.indexOf(note);
-
-        // remove regular note
-        if (noteIndex !== -1) {
-            console.log("remove note");
-            song.splice(noteIndex, 1);
-        }
-
-        // quantized note
-        const qNote = icon.qNote;
-        if (qNote) {
-            noteIndex = songQuantized.indexOf(qNote);
-            songQuantized.splice(noteIndex, 1);
-        }
-
-        icon.remove();
-        checkTurnOnCopyButton();
-    };
-
-    const getAllNotesInSong = () => {
-        return [...song];
-
-        const notes = [];
-        const song = quantized ? songQuantized : song;
-        for (const group of song) {
-            if (group) {
-                for (const note of group) {
-                    notes.push(note);
-                }
-            }
-        }
-        return notes;
-    };
-
-    // const getNoteList = (measure, beat) => {
-    //     // console.log("getNoteList: ", measure, beat);
-    //     // console.log("song: ", song);
-    //     const songAr = quantizeOn ? songQuantized : song;
-    //     if (!songAr[measure]) return [];
-    //     if (!songAr[measure][beat]) return [];
-    //     // console.log(songAr[measure][beat].length)r
-    //     return songAr[measure][beat];
-    // };
-
-    // const getNextBeat = (measureNum, beatNum) => {
-    //     // console.log("getNextBeat()");
-    //     const newBeat = (measureNum * 4 + beatNum + 1) % (measures * 4);
-    //     const nextMeasure = Math.floor(newBeat / 4);
-    //     const nextBeat = newBeat - nextMeasure * 4;
-    //     // console.log("from", measureNum, beatNum);
-    //     // console.log("to: ", nextMeasure, nextBeat);
-    //     return {
-    //         measure: nextMeasure,
-    //         beat: nextBeat,
-    //     };
-    // };
-
-    const addNoteToSongQuantized = (note) => {
-        songQuantized.push(note);
-    };
-
-    const quantizeNote = (note) => {
-        // quantizePrecision 4 = quarternote, 8 = 8thnote ect...
-        let msFrequency;
-        if (quantizePrecision === 4) {
-            msFrequency = msPerBeat;
-        } else if (quantizePrecision === 8) {
-            msFrequency = msPer8th;
-        } else if (quantizePrecision === 16) {
-            msFrequency = msPer16th;
-        }
-
-        // get Note's MS
-        const noteMS = getNoteMS(note);
-
-        let beatNum = Math.floor(noteMS / msFrequency);
-        const remainder = noteMS - beatNum * msFrequency;
-        const closest = Math.round(remainder / msFrequency);
-        beatNum += closest;
-        const totalBeats = track.duration / msFrequency;
-        if (beatNum === totalBeats) {
-            beatNum = 0;
-        }
-        const quantizedNote = {
-            audio: note.audio,
-            beatIcon: note.beatIcon,
-            ms: beatNum * msFrequency,
-            fraction: beatNum * (msFrequency / track.duration),
-        };
-        note.beatIcon.qNote = quantizedNote;
-        // console.log("quantized note: ", quantizedNote);
-        return quantizedNote;
-    };
-
-    const quantizeTrack = () => {
-        console.log("quantizeTrack()");
-        console.log("quantizePrecision", quantizePrecision);
-        // re-quantize the track
-        songQuantized.length = 0;
-        for (const note of song) {
-            const quantizedNote = quantizeNote(note);
-            addNoteToSongQuantized(quantizedNote);
-            // note.beatIcon.qNote = quantizedNote;
-        }
-        if (quantizeOn) positionBeatIcons();
-    };
-
-    const clearTrack = (clearAll = false) => {
-        clearLight.classList.add("on");
-
-        let selectedIcons;
-        // clear selected beat icons
-        if (clearAll) {
-            selectedIcons = selectAllIcons();
-        } else {
-            selectedIcons = getSelectedIcons();
-            if (selectedIcons.length === 0) {
-                const response = confirm("Clear the whole track");
-                if (response) {
-                    // user pressed the Ok button
-                    selectedIcons = selectAllIcons();
-                } else {
-                    console.log("dont clear track");
-                    // user canceled
-                    return;
-                }
-            }
-        }
-        copySelectedNotesToClipboard();
-        for (const icon of selectedIcons) {
-            // find its note in the song
-            removeNoteFromSong(icon.note);
-        }
-    };
-
-    const buildSongFromSongCode = (songJson) => {
-        // console.log("code", code);
-        // songJson is an array of notes
-        const songCodeObj = JSON.parse(songJson);
-
-        // clear song
-        clearTrack(true);
-        // set tempo
-        setTempo(songCodeObj.bpm);
-        document.getElementById("tempo-slider").value = bpm;
-        document.querySelector(".info.tempo span.value").innerHTML = bpm;
-        // set measures
-        setMeasures(songCodeObj.measures);
-        document.getElementById("measures-slider").value = measures;
-        document.querySelector(".info.measure span.value").innerHTML = measures;
-
-        // Program song notes
-        for (const note of songCodeObj.notes) {
-            // console.log(note);
-            const audio = document.querySelector(
-                `audio[src="${note.audioSrc}"]`
-            );
-            if (!note.fraction) {
-                note.fraction = note.ms / track.duration;
-            }
-            // console.log("note.fraction", note.fraction);
-            const fraction = note.fraction;
-            // console.log("ms", ms);
-            programNote(audio, note.ms);
-        }
-        // Activate samples in song
-        clearSampleKeys();
-        for (const audio of allSamples) {
-            if (checkSampleInSong(audio)) {
-                console.log(audio.dataset.sample, "in song");
-                // Activate this sample if not active
-                activateSample(audio);
-            }
-        }
-        // Position beat Icons
-        positionBeatIcons();
-    };
-
-    // -------------------------------
-    // Track Settings
+    // Song Settings
     // -------------------------------
 
     const setTempo = (value) => {
         bpm = value;
         msPerBeat = 60000 / bpm;
-        msPer8th = msPerBeat * 0.5;
-        msPer16th = msPer8th * 0.5;
         track.duration = msPerBeat * 4 * measures;
         drawTrack();
         positionBeatIcons();
@@ -664,11 +379,8 @@ db   8D `8b  d8' 88  V888 88. ~8~    d8'         88    88 `88. 88   88 Y8b  d8 8
     };
 
     const setMeasures = (value) => {
-        const ratio = measures / value;
-        recalculateNotesFractions(ratio);
         measures = value;
         track.duration = msPerBeat * 4 * measures;
-
         drawTrack();
         positionBeatIcons();
         positionPlayheadByElapsed();
@@ -679,7 +391,6 @@ db   8D `8b  d8' 88  V888 88. ~8~    d8'         88    88 `88. 88   88 Y8b  d8 8
     // -------------------------------
 
     const startPlaying = () => {
-        if (isPlaying) return;
         isPlaying = true;
         startTime = -1;
         window.requestAnimationFrame(step);
@@ -705,12 +416,17 @@ db   8D `8b  d8' 88  V888 88. ~8~    d8'         88    88 `88. 88   88 Y8b  d8 8
         setPlayheadPosition(track.trackWidth * pctPlayed);
     };
 
-    const checkAndPlayNotes = (f0, f1) => {
+    const getKeyFromSample = (audioEl) => {
+        return document.querySelector(`.key[data-id="${audioEl.dataset.id}"]`);
+    };
+
+    const checkAndPlayNotes = (measure, beat, f0, f1) => {
         // While track is playing
-        const songAr = quantizeOn ? songQuantized : song;
+
         // Return true if 'note' is played, false if not
+        const notesList = getNoteList(measure, beat);
         let foundNote = false;
-        songAr.forEach((note) => {
+        notesList.forEach((note) => {
             if (note.fraction >= f0 && note.fraction < f1) {
                 // play it
                 playSound(note.audio);
@@ -724,7 +440,7 @@ db   8D `8b  d8' 88  V888 88. ~8~    d8'         88    88 `88. 88   88 Y8b  d8 8
                     }
                 }
                 // light up beat icon for 'note'
-                if (!isRecording && note.beatIcon) {
+                if (note.beatIcon) {
                     if (!note.beatIcon.classList.contains("selected")) {
                         note.beatIcon.classList.add("on");
                     }
@@ -734,6 +450,20 @@ db   8D `8b  d8' 88  V888 88. ~8~    d8'         88    88 `88. 88   88 Y8b  d8 8
         });
         return foundNote;
     };
+
+    const removeDuplicateNotes = (note) => {
+        // If note of same sample already in song less than minMSdiff away,
+        // remove it and add this one.
+        const minMSdiff = 10;
+        const dupes = findSampleInSong(note.audio);
+        for (const dupe of dupes) {
+            const msDiff = getNotesMSdifference(note, dupe);
+            if (getNotesMSdifference(note, dupe) < minMSdiff) {
+                // remove dupe
+                removeNoteFromSong(dupe);
+            }
+        }
+    };  
 
     const toggleQuantize = () => {
         quantizeOn = !quantizeOn;
@@ -757,13 +487,11 @@ db   8D `8b  d8' 88  V888 88. ~8~    d8'         88    88 `88. 88   88 Y8b  d8 8
     };
 
     const updateCounter = () => {
-        const measure = Math.floor(currentBeat / 4);
-        document.getElementById("counter").innerHTML = `measure ${measure}
-                            beat ${currentBeat % 4}
-                            ms ${Math.round(elapsed % msPerBeat)
-                                .toString()
-                                .padStart(4, "0")}
-                             &nbsp;fps ${currentFPS}`;
+        document.getElementById(
+            "counter"
+        ).innerHTML = `measure ${currentMeasure}
+                            beat ${currentBeat}
+                            ms ${Math.round(currentMS)}`;
     };
 
     // =======================
@@ -798,15 +526,293 @@ db   8D `8b  d8' 88  V888 88. ~8~    d8'         88    88 `88. 88   88 Y8b  d8 8
         }
     };
 
+    // ==============================
+    //
+    //    MANAGE NOTES / SONG
+    //
+    // ==============================
+
+    const programNote = (audio, measure, beat, ms) => {
+        // Create a note object and add it to song array
+        // Also create quantized note and add it to songQuantized
+
+        let beatIcon = null;
+        if (audio.id != "tick") {
+            beatIcon = makeBeatIcon();
+        }
+        if (!song[measure]) song[measure] = [];
+        if (!song[measure][beat]) song[measure][beat] = [];
+        const note = {
+            audio,
+            beatIcon,
+            measure,
+            beat,
+            fraction: ms / msPerBeat,
+        };
+
+        removeDuplicateNotes(note);
+
+        // Add note to song
+        song[measure][beat].push(note);
+        const qNote = quantizeNote(note);
+        addNoteToSongQuantized(qNote);
+        beatIcon.note = note;
+        beatIcon.qNote = qNote;
+
+        positionBeatIcon(note);
+
+        return note;
+    };
+
+    const getNotesMSdifference = (note1, note2) => {
+        const totalMS1 = track.duration + getNoteTotalMS(note1);
+        const totalMS2 = track.duration + getNoteTotalMS(note2);
+        return Math.abs(totalMS1 - totalMS2);
+    };
+
+    const checkSampleInSong = (audioEl) => {
+        for (const measure of song) {
+            if (measure) {
+                for (const beat of measure) {
+                    if (beat) {
+                        for (const note of beat) {
+                            if (note.audio === audioEl) {
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return false;
+    };
+
+    const findSampleInSong = (audioEl) => {
+        // console.log('\r\nfindSampleInSong()',audioEl);
+        // returns array of notes
+        const matchingNotes = [];
+        // console.log('song',song);
+        for (const measure of song) {
+            if (measure) {
+                for (const beat of measure) {
+                    if (beat) {
+                        for (const note of beat) {
+                            if (note.audio === audioEl) {
+                                matchingNotes.push(note);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        // console.log("matchingNotes", matchingNotes);
+        return matchingNotes;
+    };
+
+    const removeNotesFromSong = (notesAr) => {
+        for (const note of notesAr) {
+            removeNoteFromSong(note);
+        }
+    };
+
+    const removeNoteFromSong = (note) => {
+        let icon = note.beatIcon;
+        let beat = song[note.measure][note.beat];
+        let noteIndex = beat.indexOf(note);
+
+        // remove regular note
+        if (noteIndex !== -1) {
+            console.log("remove note");
+            beat.splice(noteIndex, 1);
+        }
+
+        // quantized note
+        const qNote = icon.qNote;
+        if (qNote) {
+            const qBeat = songQuantized[qNote.measure][qNote.beat];
+            noteIndex = qBeat.indexOf(qNote);
+            qBeat.splice(noteIndex, 1);
+        }
+
+        icon.remove();
+        checkTurnOnCopyButton();
+    };
+
+    const getAllNotesInSong = () => {
+        const notes = [];
+        for (const measure of song) {
+            if (measure) {
+                for (const beat of measure) {
+                    if (beat) {
+                        notes.push(...beat);
+                    }
+                }
+            }
+        }
+        return notes;
+    };
+
+    const getNoteList = (measure, beat) => {
+        // console.log("getNoteList: ", measure, beat);
+        // console.log("song: ", song);
+        const songAr = quantizeOn ? songQuantized : song;
+        if (!songAr[measure]) return [];
+        if (!songAr[measure][beat]) return [];
+        // console.log(songAr[measure][beat].length)r
+        return songAr[measure][beat];
+    };
+
+    const getNextBeat = (measureNum, beatNum) => {
+        // console.log("getNextBeat()");
+        const newBeat = (measureNum * 4 + beatNum + 1) % (measures * 4);
+        const nextMeasure = Math.floor(newBeat / 4);
+        const nextBeat = newBeat - nextMeasure * 4;
+        // console.log("from", measureNum, beatNum);
+        // console.log("to: ", nextMeasure, nextBeat);
+        return {
+            measure: nextMeasure,
+            beat: nextBeat,
+        };
+    };
+
+    const addNoteToSongQuantized = (note) => {
+        if (!songQuantized[note.measure]) songQuantized[note.measure] = [];
+        if (!songQuantized[note.measure][note.beat])
+            songQuantized[note.measure][note.beat] = [];
+        songQuantized[note.measure][note.beat].push(note);
+    };
+
+    const quantizeNote = (note) => {
+        // console.log("quantize note", note);
+        let noteMeasure = note.measure;
+        let noteBeat = note.beat;
+        let fraction = note.fraction;
+        let qFraction;
+        // round
+
+        // one8th is half beat
+        const one8th = 0.5;
+        if (fraction > one8th) {
+            // console.log("2nd 8th");
+            // 2nd 8th
+            qFraction =
+                one8th + Math.round((fraction - one8th) / one8th) * one8th;
+            if (qFraction === 1) {
+                // End of beat, put at start of next beat
+                // console.log("start: ", noteMeasure, noteBeat, fraction);
+                const nextBeatObj = getNextBeat(noteMeasure, noteBeat);
+                noteMeasure = nextBeatObj.measure;
+                noteBeat = nextBeatObj.beat;
+                qFraction = 0;
+                // console.log("end: ", noteMeasure, noteBeat, qFraction);
+            }
+        } else {
+            // first 8th
+            // console.log("first 8th");
+            qFraction = Math.round(fraction / one8th) * one8th;
+        }
+
+        const quantizedNote = {
+            audio: note.audio,
+            beatIcon: note.beatIcon,
+            measure: noteMeasure,
+            beat: noteBeat,
+            fraction: qFraction,
+        };
+        // console.log("quantized note: ", quantizedNote);
+        return quantizedNote;
+    };
+
+    const quantizeTrack = () => {
+        // move all 'notes' to closest 8th
+        songQuantized.length = 0;
+        for (const measure of song) {
+            if (measure) {
+                for (const beat of measure) {
+                    if (beat) {
+                        for (const note of beat) {
+                            const quantizedNote = quantizeNote(note);
+                            addNoteToSongQuantized(quantizedNote);
+                        }
+                    }
+                }
+            }
+        }
+    };
+
+    const clearTrack = (clearAll = false) => {
+        clearLight.classList.add("on");
+
+        let selectedIcons;
+        // clear selected beat icons
+        if (clearAll) {
+            selectedIcons = selectAllIcons();
+        } else {
+            selectedIcons = Array.from(
+                beatIcons.querySelectorAll(".beat-icon.selected")
+            );
+            if (selectedIcons.length === 0) {
+                const response = confirm("Clear the whole track");
+                if (response) {
+                    // user pressed the Ok button
+                    selectedIcons = selectAllIcons();
+                } else {
+                    console.log("dont clear track");
+                    // user canceled
+                    return;
+                }
+            }
+        }
+
+        for (const icon of selectedIcons) {
+            // find its note in the song
+            removeNoteFromSong(icon.note);
+        }
+    };
+
+    const buildSongFromSongCode = (songJson) => {
+        // console.log("code", code);
+        // songJson is an array of notes
+        const songCodeObj = JSON.parse(songJson);
+        // clear song
+        clearTrack(true);
+        // set tempo
+        setTempo(songCodeObj.bpm);
+        document.getElementById("tempo-slider").value = bpm;
+        document.querySelector(".info.tempo span.value").innerHTML = bpm;
+        // set measures
+        setMeasures(songCodeObj.measures);
+        document.getElementById("measures-slider").value = measures;
+        document.querySelector(".info.measure span.value").innerHTML = measures;
+
+        // Program song notes
+        for (const note of songCodeObj.notes) {
+            const audio = document.querySelector(
+                `audio[src="${note.audioSrc}"]`
+            );
+            const ms = note.fraction * msPerBeat;
+            programNote(audio, note.measure, note.beat, ms);
+        }
+        // Activate samples in song
+        clearSampleKeys();
+        for (const audio of allSamples) {
+            if (checkSampleInSong(audio)) {
+                console.log(audio.dataset.sample, "in song");
+                // Activate this sample if not active
+                activateSample(audio);
+            }
+        }
+        // Position beat Icons
+        positionBeatIcons();
+    };
+
     const copySelectedNotesToClipboard = () => {
         console.log("copySelectedNotesToClipboard()");
         // Copy selected Notes
-        let selectedIcons = getSelectedIcons();
+        const selectedIcons = Array.from(
+            beatIcons.querySelectorAll(".beat-icon.selected")
+        );
         console.log("selectedIcons.length", selectedIcons.length);
-        if (selectedIcons.length === 0) {
-            // None selected, copy them all
-            selectedIcons = getAllIcons();
-        }
         track.clipboardNotes.length = 0;
         for (const icon of selectedIcons) {
             const note = icon.note; //getNoteFromBeatIcon(icon);
@@ -818,47 +824,59 @@ db   8D `8b  d8' 88  V888 88. ~8~    d8'         88    88 `88. 88   88 Y8b  d8 8
         }
     };
 
-    const MSINSTEADOFFRACTIONpasteNotesFromClipboard = () => {
-        // Paste notes from clipboard
-
-        // sort left to right
-        track.clipboardNotes.sort((A, B) => {
-            return A.ms - B.ms;
-        });
-
-        const leftmostNote = track.clipboardNotes[0];
-        const leftmostTotalMS = leftmostNote.ms;
-        const playheadMS = getElapsedFromPlayheadPosition();
-
-        for (const note of track.clipboardNotes) {
-            const relativeMS = note.ms - leftmostTotalMS;
-
-            const noteMS = (playheadMS + relativeMS) % track.duration;
-
-            programNote(note.audio, noteMS);
-        }
-        track.deselectBeatIcons();
+    const getNoteTotalMS = (note) => {
+        return (
+            note.measure * 4 * msPerBeat +
+            note.beat * msPerBeat +
+            note.fraction * msPerBeat
+        );
     };
 
     const pasteNotesFromClipboard = () => {
         // Paste notes from clipboard
 
+        // Move these helper functions to program's root level (if they're useful elsewhere)
+
+        const getMeasureBeatMSfromMS = (ms) => {
+            const measure = Math.floor(ms / (msPerBeat * 4)) % measures;
+            const beat = Math.floor(ms / msPerBeat) % 4;
+            ms = ms % msPerBeat;
+
+            return {
+                measure,
+                beat,
+                ms,
+            };
+        };
+        const msToPx = (ms) => {
+            const pxPerMS = track.trackWidth / track.duration;
+            return pxPerMS * ms;
+        };
+
         // sort left to right
         track.clipboardNotes.sort((A, B) => {
-            return A.fraction - B.fraction;
+            return getNoteTotalMS(A) - getNoteTotalMS(B);
         });
-
+        // console.log("clipboard: ", track.clipboardNotes);
         const leftmostNote = track.clipboardNotes[0];
-        const leftmostTotalFraction = leftmostNote.fraction;
-        const playheadFraction = getPlayheadX() / track.trackWidth;
+        const leftmostTotalMS = getNoteTotalMS(leftmostNote);
+        const playheadMS = getElapsedFromPlayheadPosition();
 
         for (const note of track.clipboardNotes) {
-            const relativeFraction = note.fraction - leftmostTotalFraction;
-
-            const noteFraction = (playheadFraction + relativeFraction) % 1;
-            const noteMS = noteFraction * track.duration;
-
-            programNote(note.audio, noteMS);
+            const relativeMS = getNoteTotalMS(note) - leftmostTotalMS;
+            const relativePX = msToPx(relativeMS);
+            const noteMS = (playheadMS + relativeMS) % track.duration;
+            // console.log('playheadMS',playheadMS);
+            // console.log('relativeMS',relativeMS);
+            // console.log('track.duration',track.duration);
+            const nextMBMS = getMeasureBeatMSfromMS(noteMS);
+            // console.log('note: ',note);
+            programNote(
+                note.audio,
+                nextMBMS.measure,
+                nextMBMS.beat,
+                nextMBMS.ms
+            );
         }
         track.deselectBeatIcons();
     };
@@ -886,13 +904,13 @@ db   8D `8b  d8' 88  V888 88. ~8~    d8'         88    88 `88. 88   88 Y8b  d8 8
     // =======================
 
     const playSound = (audio) => {
-        // if (!(audio.currentTime === 0 || audio.ended)) {
-        //     // console.log("overlap");
-        //     playSampleCopy(audio);
-        // } else {
+        if (!(audio.currentTime === 0 || audio.ended)) {
+            // console.log("overlap");
+            playSampleCopy(audio);
+        } else {
             audio.currentTime = 0;
             audio.play();
-        // }
+        }
     };
 
     const checkKeySound = (event) => {
@@ -911,15 +929,13 @@ db   8D `8b  d8' 88  V888 88. ~8~    d8'         88    88 `88. 88   88 Y8b  d8 8
         if (audio) {
             // If recording or editing, record note
             if (isRecording || isEditing) {
-                programNote(audio, elapsed);
+                programNote(audio, currentMeasure, currentBeat, currentMS);
             }
 
             // play note
-            if (!isRecording) {
-                // if recording, the note will get played by playhead movement
-                playSound(audio);
-                key.classList.add("playing");
-            }
+
+            playSound(audio);
+            key.classList.add("playing");
         }
     };
 
@@ -1053,8 +1069,15 @@ db   8D `8b  d8' 88  V888 88. ~8~    d8'         88    88 `88. 88   88 Y8b  d8 8
         // console.log("position beat icon note", note);
         if (!note.beatIcon) return;
 
+        // if (quantizeOn) {
+        //     note = note.beatIcon.qNote;
+        // }
         // x position
-        const x = track.trackWidth * note.fraction;
+        const totalBeats = note.measure * 4 + note.beat + note.fraction;
+        const pxPerBeat = track.trackWidth / (measures * 4);
+        // const pixelsPerMS = track.trackWidth / track.duration;
+        // const x = totalMS * pixelsPerMS;
+        const x = totalBeats * pxPerBeat;
         // y position
         const drumIndex = activeSamples.indexOf(note.audio);
         const y =
@@ -1104,8 +1127,16 @@ db   8D `8b  d8' 88  V888 88. ~8~    d8'         88    88 `88. 88   88 Y8b  d8 8
 
     const positionBeatIcons = () => {
         const songAr = quantizeOn ? songQuantized : song;
-        for (const note of songAr) {
-            positionBeatIcon(note);
+        for (const measure of songAr) {
+            if (measure) {
+                for (const beat of measure) {
+                    if (beat) {
+                        for (const note of beat) {
+                            positionBeatIcon(note);
+                        }
+                    }
+                }
+            }
         }
     };
 
@@ -1113,27 +1144,35 @@ db   8D `8b  d8' 88  V888 88. ~8~    d8'         88    88 `88. 88   88 Y8b  d8 8
         return Array.from(beatIcons.querySelectorAll(".beat-icon"));
     };
 
-    const getSelectedIcons = () => {
-        return Array.from(beatIcons.querySelectorAll(".beat-icon.selected"));
-    };
-
-    const getAllIcons = () => {
-        return Array.from(beatIcons.querySelectorAll(".beat-icon"));
-    };
-
     const getNoteFromBeatIcon = (beatIcon) => {
         // or we can just set beatIcon.note when we create an icon
-        for (const note of song) {
-            if (note.beatIcon === beatIcon) {
-                return note;
+        for (const measure of song) {
+            if (measure) {
+                for (const beat of measure) {
+                    if (beat) {
+                        for (const note of beat) {
+                            if (note.beatIcon === beatIcon) {
+                                return note;
+                            }
+                        }
+                    }
+                }
             }
         }
     };
     const getQuantizedNoteFromBeatIcon = (beatIcon) => {
         // or we can just set beatIcon.note when we create an icon
-        for (const note of songQuantized) {
-            if (note.beatIcon === beatIcon) {
-                return note;
+        for (const measure of songQuantized) {
+            if (measure) {
+                for (const beat of measure) {
+                    if (beat) {
+                        for (const note of beat) {
+                            if (note.beatIcon === beatIcon) {
+                                return note;
+                            }
+                        }
+                    }
+                }
             }
         }
     };
@@ -1145,10 +1184,14 @@ db   8D `8b  d8' 88  V888 88. ~8~    d8'         88    88 `88. 88   88 Y8b  d8 8
 
         const pctPos = beatIcon.offsetLeft / track.trackWidth;
         const elapsed = pctPos * track.duration;
-
+        // console.log("elapsed", elapsed);
+        const beats = Math.floor(elapsed / msPerBeat);
+        const measure = Math.floor(beats / 4);
+        const beat = beats - measure * 4;
+        const ms = elapsed - beats * msPerBeat;
         // remove note from current place in song
         removeNoteFromSong(note);
-        programNote(note.audio, elapsed);
+        programNote(note.audio, measure, beat, ms);
     };
 
     // =============================================
@@ -1242,137 +1285,96 @@ db   8D `8b  d8' 88  V888 88. ~8~    d8'         88    88 `88. 88   88 Y8b  d8 8
 
 
     */
-    let frameCount = 0;
-    let msCount = 0;
-    let lastNow = Date.now();
-    let shortestStepTime = 1000;
-    let currentFPS = 60;
-    let tempoLag = 0;
+    let morethan5MSoffTempo = 0;
     let greatestOff = 0;
-    let lastBeatMS = 0;
     function step(timestamp) {
+        // console.log('======= step()');
         if (startTime === -1) {
             lastStamp = startTime = timestamp;
-            setElapsedFromPlayheadPosition();
-            //
-            frameCount = 0;
-            msCount = 0;
-            lastNow = Date.now();
-            shortestStepTime = 1000;
-            console.log("\nSTARTING\n");
+            elapsed = getElapsedFromPlayheadPosition();
+            console.log("elapsed:", elapsed);
         }
-        let stepTime = timestamp - lastStamp;
-        lastStamp = timestamp;
-        // if (frameCount === 0) {
-        //     stepTime = targetMSperFrame;
-        // }
-        // if (stepTime < 10) {
-        //     console.log("stepTime", Math.round(stepTime));
-        //     console.log("frameCount", frameCount);
-        //     console.log("timestamp", timestamp);
-        // }
-        // shortestStepTime = Math.min(shortestStepTime, stepTime);
-        msCount += stepTime;
-        frameCount++;
-        if (msCount >= 1000) {
-            // console.log("\nFPS", frameCount);
-            // console.log("stepTime", Math.round(stepTime));
-            // console.log("avg stepTime", Math.round(msCount / frameCount));
-            currentFPS = frameCount;
-            frameCount = msCount = 0;
-            // const now = Date.now();
-            // console.log("since last now", now - lastNow);
-            // lastNow = now;
-            // console.log("shortest step", Math.round(shortestStepTime));
-            // shortestStepTime = 1000;
-            // console.log(timestamp);
-        }
-        // const frameDiff = Math.abs(stepTime - targetMSperFrame);
-        // if (frameDiff > 17) {
-        //     // greatestOff = Math.max(frameDiff, greatestOff);
-        //     // console.log("\n\rgreatestOff", greatestOff);
-        //     // console.log("targetMSperFrame", Math.round(targetMSperFrame));
-        //     console.log("\nstepTime", Math.round(stepTime));
-        //     // console.log("frameDiff", Math.round(frameDiff));
-        //     tempoLag++;
-        //     console.log("tempoLag: ", tempoLag, "times");
-        // }
-        let restartingTrack = false;
-        const lastMS = elapsed;
-        const lastFraction = lastMS / track.duration;
-        elapsed += stepTime;
-        const currentFraction = (elapsed / track.duration) % 1;
 
+        const stepTime = timestamp - lastStamp;
+        const targetMS = 1000 / 60;
+        const frameDiff = Math.abs(stepTime - targetMS);
+        if (frameDiff > 20) {
+            console.log("\r\ntargetMS", Math.round(1000 / 60));
+            console.log("stepTime", Math.round(stepTime));
+            console.log("frameDiff: ", frameDiff);
+            greatestOff = Math.max(frameDiff, greatestOff);
+            console.log("greatestOff", greatestOff);
+            morethan5MSoffTempo++;
+            console.log("morethan5MSoffTempo: ", morethan5MSoffTempo);
+        }
+
+        elapsed += timestamp - lastStamp;
+        lastStamp = timestamp;
+
+        const lastMeasure = currentMeasure;
+        // Calculate Measure
+        currentMeasure = Math.floor(elapsed / (msPerBeat * 4)) % measures;
+        const lastBeat = currentBeat;
+        // Calculate Beat
+        currentBeat = Math.floor(elapsed / msPerBeat) % 4;
+        const lastMS = currentMS;
+        // Calculate MS
+        currentMS = Math.floor(elapsed % msPerBeat);
+        // Calculate last and current fraction of the beat
+        const f0 = lastMS / msPerBeat;
+        const f1 = currentMS / msPerBeat;
         // check for new beat
         let playedNote = false;
-        lastBeat = currentBeat;
-        currentBeat = Math.floor(elapsed / msPerBeat);
-
-        // check for 1/4 note
         if (currentBeat != lastBeat || elapsed === 0) {
             // On New Beat!
-
             if (isRecording) {
                 playSound(document.getElementById("tick"));
             } else if (lightFrequency > 0) {
                 randomBackgroundColor();
             }
             showBeat();
-
             // have we played through the track and started over?
-            if (elapsed > track.duration) {
-                // looping to beginning of track
-                restartingTrack = true;
-                elapsed -= track.duration;
-                // console.log('\nrestarting track, elapsed:',elapsed,'\n')
-                // startTime = timestamp - elapsed;
-                currentBeat = 0;
+            if (currentMeasure === 0 && currentBeat === 0) {
+                elapsed = currentMS;
+                startTime = timestamp - currentMS;
             }
+
+            // end of last beat
+            // start of this beat
+            const playedNote1 = checkAndPlayNotes(lastMeasure, lastBeat, f0, 1);
+            const playedNote2 = checkAndPlayNotes(
+                currentMeasure,
+                currentBeat,
+                0,
+                f1
+            );
+            playedNote = playedNote1 || playedNote2;
         } else {
-            // in same 1/4 note as last time
-            // check for 8th note
-            last8th = current8th;
-            current8th = Math.floor(elapsed / msPer8th);
-            if (!isRecording && last8th !== current8th) {
-                if (lightFrequency === 8 || lightFrequency === 16) {
+            // this beat only
+            playedNote = checkAndPlayNotes(currentMeasure, currentBeat, f0, f1);
+            // check for 8th beat
+            const msPer8th = msPerBeat * 0.5;
+            if (lastMS < msPer8th && currentMS >= msPer8th) {
+                if (lightFrequency === 8 || lightFrequency === 16)
                     randomBackgroundColor();
-                }
-
-                // if (elapsed > lastBeatMS) {
-                //     const beatDuration = elapsed - lastBeatMS;
-                //     console.log("beatMS: ", Math.round(beatDuration), "MS");
-                // }
-                // lastBeatMS = elapsed;
             } else {
-                // check for 16th note
-                last16th = current16th;
-                current16th = Math.floor(elapsed / msPer16th);
-
-                if (!isRecording && last16th !== current16th) {
-                    if (lightFrequency === 16) {
-                        randomBackgroundColor();
+                // check for 16th beat
+                if (lightFrequency === 16) {
+                    const msPer16th = msPer8th * 0.5;
+                    if (
+                        (lastMS < msPer16th && currentMS >= msPer16th) ||
+                        (lastMS < msPer16th * 3 && currentMS >= msPer16th * 3)
+                    ) {
+                        if (Math.random() < 0.5) randomBackgroundColor();
                     }
                 }
             }
         }
-        if (restartingTrack) {
-            // console.log("RNRESTARTING TRACK");
-            // // end of last loop
-            // // start of this loop
-            // console.log("lastMS", lastMS);
-            // console.log("track.duration", track.duration);
-            // console.log("elapsed", elapsed);
-            const playedNote1 = checkAndPlayNotes(lastFraction, 1);
-            const playedNote2 = checkAndPlayNotes(0, currentFraction);
-            playedNote = playedNote1 || playedNote2;
-        } else {
-            // haven't played through track
-            playedNote = checkAndPlayNotes(lastFraction, currentFraction);
-        }
         if (playedNote && !isRecording && lightFrequency === 0) {
             randomBackgroundColor();
         }
-
+        // console.log('currentMBMS:',currentMeasure,currentBeat,currentMS);
+        // console.log('elapsed: ',elapsed);
         positionPlayheadByElapsed();
         updateCounter();
         if (isPlaying) {
@@ -1490,7 +1492,7 @@ db   8D `8b  d8' 88  V888 88. ~8~    d8'         88    88 `88. 88   88 Y8b  d8 8
             pasteNotesFromClipboard();
         } else if (event.code === "Digit0" || event.code === "Numpad0") {
             setPlayheadPosition(0);
-            setElapsedFromPlayheadPosition();
+            setMeasureBeatMSFromPlayheadPosition();
         } else {
             // Maybe an instrument key
             checkKeySound(event);
@@ -1509,7 +1511,10 @@ db   8D `8b  d8' 88  V888 88. ~8~    d8'         88    88 `88. 88   88 Y8b  d8 8
     ////////////////////
 
     checkTurnOnCopyButton = () => {
-        if (getSelectedIcons().length === 0) {
+        if (
+            document.querySelectorAll("#beat-icons .beat-icon.selected")
+                .length === 0
+        ) {
             // un-hilite copy-notes button
             document.getElementById("copy-notes").classList.remove("on");
         } else {
@@ -1659,14 +1664,33 @@ db   8D `8b  d8' 88  V888 88. ~8~    d8'         88    88 `88. 88   88 Y8b  d8 8
     };
 
     const getElapsedFromPlayheadPosition = () => {
+        // console.log('getElapsedFromPlayheadPosition()');
+        // const pctPos = playheadEl.offsetLeft / track.trackWidth;
         const pctPos = getPlayheadX() / track.trackWidth;
+        // console.log('     playheadEl.offsetLeft:',playheadEl.offsetLeft);
+        // console.log('     playheadEl.getBoundingClientRect().left:',playheadEl.getBoundingClientRect().left);
+        // console.log('     scrollLeft: ',playheadEl.scrollLeft);
+        // console.log('     track.trackwidth:',track.trackWidth);
+        // console.log('     elapsed:',pctPos * track.duration);
+        // console.log('   ^')
         return pctPos * track.duration;
     };
 
-    const setElapsedFromPlayheadPosition = () => {
-        elapsed = getElapsedFromPlayheadPosition();
+    const setMeasureBeatMSFromPlayheadPosition = () => {
+        const elapsed = getElapsedFromPlayheadPosition();
+        // console.log("elapsed: ", elapsed);
+        const beats = Math.floor(elapsed / msPerBeat);
+        currentMeasure = Math.floor(beats / 4);
+        currentBeat = beats - currentMeasure * 4;
+        currentMS = elapsed - beats * msPerBeat;
+        // console.log("currentMBMS: ", currentMeasure, currentBeat, currentMS);
+        // console.log("   ^");
         updateCounter();
     };
+    // const getPlayheadMS = () => {
+    //     const playheadX = playheadEl.offsetLeft;
+    //     return (playheadX / track.trackWidth) * track.duration;
+    // };
 
     const setPlayheadPosition = (playheadX) => {
         // console.log('setPlayheadPosition('+playheadX+')');
@@ -1689,7 +1713,7 @@ db   8D `8b  d8' 88  V888 88. ~8~    d8'         88    88 `88. 88   88 Y8b  d8 8
             playheadX = Math.max(Math.min(playheadX, track.trackWidth), 0);
 
             setPlayheadPosition(playheadX);
-            setElapsedFromPlayheadPosition();
+            setMeasureBeatMSFromPlayheadPosition();
         });
 
     document.body.addEventListener("pointermove", (event) => {
@@ -1702,13 +1726,15 @@ db   8D `8b  d8' 88  V888 88. ~8~    d8'         88    88 `88. 88   88 Y8b  d8 8
             playheadX = Math.max(Math.min(playheadX, track.trackWidth), 0);
 
             setPlayheadPosition(playheadX);
-            setElapsedFromPlayheadPosition();
+            setMeasureBeatMSFromPlayheadPosition();
             // console.log(playheadX + "px");
         } else if (draggingIcons) {
             // Drag Icons
             const newIconDragX = getXinTrack(event);
             const dragDistX = event.movementX; //newIconDragX - lastIconDragX; //
-            const selectedIcons = getSelectedIcons();
+            const selectedIcons = Array.from(
+                beatIcons.querySelectorAll(".beat-icon.selected")
+            );
             for (icon of selectedIcons) {
                 icon.style.left = `${icon.offsetLeft + dragDistX}px`;
             }
@@ -1721,7 +1747,9 @@ db   8D `8b  d8' 88  V888 88. ~8~    d8'         88    88 `88. 88   88 Y8b  d8 8
         draggingPlayhead = false;
         if (draggingIcons) {
             // reset notes of selected icons
-            const selectedIcons = getSelectedIcons();
+            const selectedIcons = Array.from(
+                beatIcons.querySelectorAll(".beat-icon.selected")
+            );
             // console.log('selectedIcons',selectedIcons)
             for (icon of selectedIcons) {
                 icon.classList.remove("selected");
@@ -1758,32 +1786,41 @@ db   8D `8b  d8' 88  V888 88. ~8~    d8'         88    88 `88. 88   88 Y8b  d8 8
 
     // GET / PASTE TRACK CODE
 
-    const writeSongCodeToClipboard = () => {
-        // copy JSON to clipboard
-        // create array of notes - measure, beat, fraction, and relative audio src path
-        const notes = [];
-        for (const note of song) {
-            notes.push({
-                audioSrc: note.audio.getAttribute("src"),
-                fraction: note.fraction,
-            });
-        }
-        const songCode = {
-            bpm,
-            measures,
-            notes,
-        };
-        // console.log("notes", notes);
-        const codeJson = JSON.stringify(songCode);
-        // console.log(codeJson);
-        // Copy the text inside the text field
-        navigator.clipboard.writeText(codeJson);
-    };
-
     document
         .getElementById("get-code-button")
         .addEventListener("pointerdown", (event) => {
-            writeSongCodeToClipboard();
+            // copy JSON to clipboard
+            // create array of notes - measure, beat, fraction, and relative audio src path
+            const notes = [];
+            for (const measure of song) {
+                // console.log("measure", measure);
+                if (measure !== undefined) {
+                    for (const beat of measure) {
+                        // console.log("beat", beat);
+                        if (beat !== undefined) {
+                            for (const note of beat) {
+                                // console.log('note',note);
+                                notes.push({
+                                    audioSrc: note.audio.getAttribute("src"),
+                                    measure: note.measure,
+                                    beat: note.beat,
+                                    fraction: note.fraction,
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+            const songCode = {
+                bpm,
+                measures,
+                notes,
+            };
+            // console.log("notes", notes);
+            const codeJson = JSON.stringify(songCode);
+            // console.log(codeJson);
+            // Copy the text inside the text field
+            navigator.clipboard.writeText(codeJson);
         });
     document
         .getElementById("enter-code-button")
@@ -1869,15 +1906,20 @@ db   8D `8b  d8' 88  V888 88. ~8~    d8'         88    88 `88. 88   88 Y8b  d8 8
     // PRESETS
     //
     const presetSongs = {
-        "beat-1": `{"bpm":120,"measures":"4","notes":[{"audioSrc":"./sounds/kick.wav","ms":14.571948998178506},{"audioSrc":"./sounds/tink.wav","ms":10.92896174863388},{"audioSrc":"./sounds/clap.wav","ms":510.0182149362478},{"audioSrc":"./sounds/kick.wav","ms":757.7413479052824},{"audioSrc":"./sounds/snare.wav","ms":502.73224043715845},{"audioSrc":"./sounds/kick.wav","ms":1264.1165755919853},{"audioSrc":"./sounds/tink.wav","ms":1001.8214936247722},{"audioSrc":"./sounds/snare.wav","ms":1384.335154826958},{"audioSrc":"./sounds/clap.wav","ms":1508.1967213114754},{"audioSrc":"./sounds/kick.wav","ms":1755.9198542805102},{"audioSrc":"./sounds/tink.wav","ms":1500.9107468123862},{"audioSrc":"./sounds/snare.wav","ms":1504.5537340619308},{"audioSrc":"./sounds/kick.wav","ms":2003.6429872495444},{"audioSrc":"./sounds/clap.wav","ms":2499.0892531876134},{"audioSrc":"./sounds/cowbell.wav","ms":2019},{"audioSrc":"./sounds/hihat.wav","ms":2258.6520947176687},{"audioSrc":"./sounds/kick.wav","ms":2746.8123861566482},{"audioSrc":"./sounds/snare.wav","ms":2506.375227686703},{"audioSrc":"./sounds/tink.wav","ms":2517.304189435337},{"audioSrc":"./sounds/cowbell_muted.wav","ms":2514.088114754098},{"audioSrc":"./sounds/hihat.wav","ms":2739.5264116575595},{"audioSrc":"./sounds/kick.wav","ms":3253.1876138433513},{"audioSrc":"./sounds/clap.wav","ms":3497.267759562841},{"audioSrc":"./sounds/snare.wav","ms":3387.978142076503},{"audioSrc":"./sounds/tink.wav","ms":3016.3934426229507},{"audioSrc":"./sounds/cowbell.wav","ms":3036},{"audioSrc":"./sounds/cowbell_muted.wav","ms":3260.4735883424405},{"audioSrc":"./sounds/kick.wav","ms":3744.990892531876},{"audioSrc":"./sounds/tink.wav","ms":3508},{"audioSrc":"./sounds/snare.wav","ms":3505},{"audioSrc":"./sounds/cowbell_muted.wav","ms":3724},{"audioSrc":"./sounds/hihat.wav","ms":3752.2768670309656},{"audioSrc":"./sounds/tink.wav","ms":4007.2859744990888},{"audioSrc":"./sounds/kick.wav","ms":4010.9289617486334},{"audioSrc":"./sounds/snare.wav","ms":4499.089253187613},{"audioSrc":"./sounds/clap.wav","ms":4506.375227686703},{"audioSrc":"./sounds/kick.wav","ms":4754.098360655737},{"audioSrc":"./sounds/tink.wav","ms":4998.178506375227},{"audioSrc":"./sounds/kick.wav","ms":5260.47358834244},{"audioSrc":"./sounds/snare.wav","ms":5380.692167577413},{"audioSrc":"./sounds/tink.wav","ms":5497.267759562841},{"audioSrc":"./sounds/snare.wav","ms":5500.910746812386},{"audioSrc":"./sounds/clap.wav","ms":5504.55373406193},{"audioSrc":"./sounds/kick.wav","ms":5752.276867030965},{"audioSrc":"./sounds/kick.wav","ms":5999.999999999999},{"audioSrc":"./sounds/cowbell.wav","ms":6015.357012750455},{"audioSrc":"./sounds/clap.wav","ms":6495.446265938068},{"audioSrc":"./sounds/snare.wav","ms":6264.145036429873},{"audioSrc":"./sounds/snare.wav","ms":6502.732240437158},{"audioSrc":"./sounds/cowbell_muted.wav","ms":6510.445127504553},{"audioSrc":"./sounds/tink.wav","ms":6513.661202185792},{"audioSrc":"./sounds/kick.wav","ms":6743.169398907103},{"audioSrc":"./sounds/snare.wav","ms":6624.078624078625},{"audioSrc":"./sounds/snare.wav","ms":6755.118755118756},{"audioSrc":"./sounds/tink.wav","ms":7012.750455373405},{"audioSrc":"./sounds/kick.wav","ms":7249.544626593806},{"audioSrc":"./sounds/cowbell_muted.wav","ms":7256.830601092895},{"audioSrc":"./sounds/snare.wav","ms":7384.335154826958},{"audioSrc":"./sounds/clap.wav","ms":7493.6247723132965},{"audioSrc":"./sounds/cowbell.wav","ms":7012.408925318762},{"audioSrc":"./sounds/snare.wav","ms":7501.357012750455},{"audioSrc":"./sounds/tink.wav","ms":7504.357012750455},{"audioSrc":"./sounds/kick.wav","ms":7741.347905282331},{"audioSrc":"./sounds/hihat.wav","ms":7504.553734061931},{"audioSrc":"./sounds/openhat.wav","ms":7750.341530054645},{"audioSrc":"./sounds/snare.wav","ms":7762.721994535519},{"audioSrc":"./sounds/cowbell_muted.wav","ms":7753.0712530712535},{"audioSrc":"./sounds/ride.wav","ms":7993.447993447994}]}`,
+        "beat-1": `{"bpm":120,"measures":"4","notes":[{"audioSrc":"./sounds/kick.wav","measure":0,"beat":0,"fraction":0.029143897996357013},{"audioSrc":"./sounds/tink.wav","measure":0,"beat":0,"fraction":0.02185792349726776},{"audioSrc":"./sounds/clap.wav","measure":0,"beat":1,"fraction":0.020036429872495546},{"audioSrc":"./sounds/kick.wav","measure":0,"beat":1,"fraction":0.5154826958105648},{"audioSrc":"./sounds/snare.wav","measure":0,"beat":1,"fraction":0.005464480874316905},{"audioSrc":"./sounds/kick.wav","measure":0,"beat":2,"fraction":0.5282331511839706},{"audioSrc":"./sounds/tink.wav","measure":0,"beat":2,"fraction":0.003642987249544376},{"audioSrc":"./sounds/snare.wav","measure":0,"beat":2,"fraction":0.7686703096539159},{"audioSrc":"./sounds/clap.wav","measure":0,"beat":3,"fraction":0.016393442622950716},{"audioSrc":"./sounds/kick.wav","measure":0,"beat":3,"fraction":0.5118397085610205},{"audioSrc":"./sounds/tink.wav","measure":0,"beat":3,"fraction":0.0018214936247723018},{"audioSrc":"./sounds/snare.wav","measure":0,"beat":3,"fraction":0.009107468123861508},{"audioSrc":"./sounds/kick.wav","measure":1,"beat":0,"fraction":0.007285974499088752},{"audioSrc":"./sounds/clap.wav","measure":1,"beat":0,"fraction":0.9981785063752268},{"audioSrc":"./sounds/cowbell.wav","measure":1,"beat":0,"fraction":0.038},{"audioSrc":"./sounds/hihat.wav","measure":1,"beat":0,"fraction":0.5173041894353373},{"audioSrc":"./sounds/kick.wav","measure":1,"beat":1,"fraction":0.4936247723132965},{"audioSrc":"./sounds/snare.wav","measure":1,"beat":1,"fraction":0.012750455373406112},{"audioSrc":"./sounds/tink.wav","measure":1,"beat":1,"fraction":0.03460837887067373},{"audioSrc":"./sounds/cowbell_muted.wav","measure":1,"beat":1,"fraction":0.02817622950819623},{"audioSrc":"./sounds/hihat.wav","measure":1,"beat":1,"fraction":0.479052823315119},{"audioSrc":"./sounds/kick.wav","measure":1,
+        
+        "beat":2,"fraction":0.5063752276867026},{"audioSrc":"./sounds/clap.wav","measure":1,"beat":2,"fraction":0.9945355191256822},{"audioSrc":"./sounds/snare.wav","measure":1,"beat":2,"fraction":0.775956284153006},{"audioSrc":"./sounds/tink.wav","measure":1,"beat":2,"fraction":0.03278688524590143},{"audioSrc":"./sounds/cowbell.wav","measure":1,"beat":2,"fraction":0.072},{"audioSrc":"./sounds/cowbell_muted.wav","measure":1,"beat":2,"fraction":0.520947176684881},{"audioSrc":"./sounds/kick.wav","measure":1,"beat":3,"fraction":0.4899817850637519},{"audioSrc":"./sounds/tink.wav","measure":1,"beat":3,"fraction":0.016},{"audioSrc":"./sounds/snare.wav","measure":1,"beat":3,"fraction":0.01},{"audioSrc":"./sounds/cowbell_muted.wav","measure":1,"beat":3,"fraction":0.448},{"audioSrc":"./sounds/hihat.wav","measure":1,"beat":3,"fraction":0.5045537340619312},{"audioSrc":"./sounds/tink.wav","measure":2,"beat":0,"fraction":0.014571948998177504},{"audioSrc":"./sounds/kick.wav","measure":2,"beat":0,"fraction":0.021857923497266712},{"audioSrc":"./sounds/snare.wav","measure":2,"beat":0,"fraction":0.9981785063752268},{"audioSrc":"./sounds/clap.wav","measure":2,"beat":1,"fraction":0.012750455373405202},{"audioSrc":"./sounds/kick.wav","measure":2,"beat":1,"fraction":0.5081967213114749},{"audioSrc":"./sounds/tink.wav","measure":2,"beat":1,"fraction":0.9963570127504536},{"audioSrc":"./sounds/kick.wav","measure":2,"beat":2,"fraction":0.5209471766848801},{"audioSrc":"./sounds/snare.wav","measure":2,"beat":2,"fraction":0.7613843351548257},{"audioSrc":"./sounds/tink.wav","measure":2,"beat":2,"fraction":0.9945355191256822},{"audioSrc":"./sounds/snare.wav","measure":2,"beat":3,"fraction":0.0018214936247713922},{"audioSrc":"./sounds/clap.wav","measure":2,"beat":3,"fraction":0.0091074681238606},{"audioSrc":"./sounds/kick.wav","measure":2,"beat":3,"fraction":0.5045537340619303},{"audioSrc":"./sounds/kick.wav","measure":2,"beat":3,"fraction":0.9999999999999982},{"audioSrc":"./sounds/cowbell.wav","measure":3,"beat":0,"fraction":0.030714025500910794},{"audioSrc":"./sounds/clap.wav","measure":3,"beat":0,"fraction":0.9908925318761358},{"audioSrc":"./sounds/snare.wav","measure":3,"beat":0,"fraction":0.5282900728597452},{"audioSrc":"./sounds/snare.wav","measure":3,"beat":1,"fraction":0.005464480874315995},{"audioSrc":"./sounds/cowbell_muted.wav","measure":3,"beat":1,"fraction":0.02089025500910611},{"audioSrc":"./sounds/tink.wav","measure":3,"beat":1,"fraction":0.027322404371583616},{"audioSrc":"./sounds/kick.wav","measure":3,"beat":1,"fraction":0.48633879781420547},{"audioSrc":"./sounds/snare.wav","measure":3,"beat":1,"fraction":0.24815724815724935},{"audioSrc":"./sounds/snare.wav","measure":3,"beat":1,"fraction":0.5102375102375117},{"audioSrc":"./sounds/tink.wav","measure":3,"beat":2,"fraction":0.025500910746810403},{"audioSrc":"./sounds/kick.wav","measure":3,"beat":2,"fraction":0.4990892531876125},{"audioSrc":"./sounds/cowbell_muted.wav","measure":3,"beat":2,"fraction":0.5136612021857909},{"audioSrc":"./sounds/snare.wav","measure":3,"beat":2,"fraction":0.7686703096539168},{"audioSrc":"./sounds/clap.wav","measure":3,"beat":2,"fraction":0.987249544626593},{"audioSrc":"./sounds/cowbell.wav","measure":3,"beat":2,"fraction":0.024817850637524317},{"audioSrc":"./sounds/snare.wav","measure":3,"beat":3,"fraction":0.002714025500910793},{"audioSrc":"./sounds/tink.wav","measure":3,"beat":3,"fraction":0.008714025500910794},{"audioSrc":"./sounds/kick.wav","measure":3,"beat":3,"fraction":0.48269581056466265},{"audioSrc":"./sounds/hihat.wav","measure":3,"beat":3,"fraction":0.009107468123862417},{"audioSrc":"./sounds/openhat.wav","measure":3,"beat":3,"fraction":0.5006830601092898},{"audioSrc":"./sounds/snare.wav","measure":3,"beat":3,"fraction":0.5254439890710383},{"audioSrc":"./sounds/cowbell_muted.wav","measure":3,"beat":3,"fraction":0.506142506142507},{"audioSrc":"./sounds/ride.wav","measure":3,"beat":3,"fraction":0.9868959868959882}]}`,
+        "beat-2": `{"bpm":"83","measures":"2","notes":[{"audioSrc":"./sounds/kick.wav","measure":0,"beat":0,"fraction":0.018214936247723135},{"audioSrc":"./sounds/boom.wav","measure":0,"beat":0,"fraction":0.02185792349726776},{"audioSrc":"./sounds/tink.wav","measure":0,"beat":0,"fraction":0.5209471766848816},{"audioSrc":"./sounds/openhat.wav","measure":0,"beat":0,"fraction":0.016450364298724953},{"audioSrc":"./sounds/tom.wav","measure":0,"beat":0,"fraction":0.7540983606557377},{"audioSrc":"./sounds/cowbell.wav","measure":0,"beat":0,"fraction":0.02621243169398907},{"audioSrc":"./sounds/ride.wav","measure":0,"beat":0,"fraction":0.02621243169398907},{"audioSrc":"./sounds/openhat.wav","measure":0,"beat":0,"fraction":0.04703333333333334},{"audioSrc":"./sounds/cowbell_muted.wav","measure":0,"beat":0,"fraction":0.014571948998178506},{"audioSrc":"./sounds/kick.wav","measure":0,"beat":1,"fraction":0.7413479052823315},{"audioSrc":"./sounds/cowbell_muted.wav","measure":0,"beat":1,"fraction":0.502504553734062},{"audioSrc":"./sounds/clap.wav","measure":0,"beat":1,"fraction":0},{"audioSrc":"./sounds/snare.wav","measure":0,"beat":1,"fraction":0.020036429872495494},{"audioSrc":"./sounds/tink.wav","measure":0,"beat":1,"fraction":0.02367941712204006},{"audioSrc":"./sounds/kick.wav","measure":0,"beat":2,"fraction":0.4990892531876138},{"audioSrc":"./sounds/boom.wav","measure":0,"beat":2,"fraction":0.5136612021857923},{"audioSrc":"./sounds/cowbell_muted.wav","measure":0,"beat":2,"fraction":0.500028460837887},{"audioSrc":"./sounds/tom.wav","measure":0,"beat":2,"fraction":0.25865209471766865},{"audioSrc":"./sounds/snare.wav","measure":0,"beat":3,"fraction":0.016393442622950716},{"audioSrc":"./sounds/kick.wav","measure":0,"beat":3,"fraction":0.49362477231329693},{"audioSrc":"./sounds/hihat.wav","measure":0,"beat":3,"fraction":0.25495218579234963},{"audioSrc":"./sounds/clap.wav","measure":0,"beat":3,"fraction":0.007416666666666667},{"audioSrc":"./sounds/boom.wav","measure":0,"beat":3,"fraction":0.7579121129326044},{"audioSrc":"./sounds/hihat.wav","measure":0,"beat":3,"fraction":0.737704918032787},{"audioSrc":"./sounds/cowbell_muted.wav","measure":0,"beat":3,"fraction":0.25657445355191266},{"audioSrc":"./sounds/openhat.wav","measure":1,"beat":0,"fraction":0.014571948998178885},{"audioSrc":"./sounds/kick.wav","measure":1,"beat":0,"fraction":0.016336520947177132},{"audioSrc":"./sounds/boom.wav","measure":1,"beat":0,"fraction":0.01997950819672154},{"audioSrc":"./sounds/cowbell.wav","measure":1,"beat":0,"fraction":0.032704918032787175},{"audioSrc":"./sounds/tink.wav","measure":1,"beat":0,"fraction":0.5190687613843354},{"audioSrc":"./sounds/tom.wav","measure":1,"beat":0,"fraction":0.7522199453551913},{"audioSrc":"./sounds/cowbell.wav","measure":1,"beat":0,"fraction":0.9789049180327872},{"audioSrc":"./sounds/clap.wav","measure":1,"beat":0,"fraction":0.9981215846994539},{"audioSrc":"./sounds/snare.wav","measure":1,"beat":1,"fraction":0.018158014571949335},{"audioSrc":"./sounds/tink.wav","measure":1,"beat":1,"fraction":0.021801001821493745},{"audioSrc":"./sounds/cowbell_muted.wav","measure":1,"beat":1,"fraction":0.5006261384335157},{"audioSrc":"./sounds/kick.wav","measure":1,"beat":1,"fraction":0.7394694899817846},{"audioSrc":"./sounds/cowbell.wav","measure":1,"beat":1,"fraction":0.9799066484517306},{"audioSrc":"./sounds/tom.wav","measure":1,"beat":2,"fraction":0.2567736794171231},{"audioSrc":"./sounds/kick.wav","measure":1,"beat":2,"fraction":0.4972108378870677},{"audioSrc":"./sounds/cowbell_muted.wav","measure":1,"beat":2,"fraction":0.49815004553734143},{"audioSrc":"./sounds/boom.wav","measure":1,"beat":2,"fraction":0.5117827868852466},{"audioSrc":"./sounds/cowbell.wav","measure":1,"beat":2,"fraction":0.9636882513661206},{"audioSrc":"./sounds/clap.wav","measure":1,"beat":3,"fraction":0.005538251366121366},{"audioSrc":"./sounds/snare.wav","measure":1,"beat":3,"fraction":0.01451502732240493},{"audioSrc":"./sounds/hihat.wav","measure":1,"beat":3,"fraction":0.25307377049180346},{"audioSrc":"./sounds/cowbell_muted.wav","measure":1,"beat":3,"fraction":0.2546960382513659},{"audioSrc":"./sounds/kick.wav","measure":1,"beat":3,"fraction":0.49174635701275116},{"audioSrc":"./sounds/hihat.wav","measure":1,"beat":3,"fraction":0.7358265027322403},{"audioSrc":"./sounds/boom.wav","measure":1,"beat":3,"fraction":0.7560336976320575}]}`,
 
-        "beat-2": `{"bpm":"83","measures":"2","notes":[{"audioSrc":"./sounds/kick.wav","ms":13.167423793534795},{"audioSrc":"./sounds/boom.wav","ms":15.800908552241753},{"audioSrc":"./sounds/tink.wav","ms":376.58832049509505},{"audioSrc":"./sounds/openhat.wav","ms":11.89182961353611},{"audioSrc":"./sounds/tom.wav","ms":545.1313450523404},{"audioSrc":"./sounds/cowbell.wav","ms":18.948745802883664},{"audioSrc":"./sounds/ride.wav","ms":18.948745802883664},{"audioSrc":"./sounds/openhat.wav","ms":34},{"audioSrc":"./sounds/cowbell_muted.wav","ms":10.533939034827835},{"audioSrc":"./sounds/kick.wav","ms":1258.8057146619262},{"audioSrc":"./sounds/cowbell_muted.wav","ms":1086.1478701692013},{"audioSrc":"./sounds/clap.wav","ms":722.8915662650602},{"audioSrc":"./sounds/snare.wav","ms":737.3757324379485},{"audioSrc":"./sounds/tink.wav","ms":740.0092171966554},{"audioSrc":"./sounds/kick.wav","ms":1806.5705444729738},{"audioSrc":"./sounds/boom.wav","ms":1817.1044835078014},{"audioSrc":"./sounds/cowbell_muted.wav","ms":1807.2494897623278},{"audioSrc":"./sounds/tom.wav","ms":1632.7605503983145},{"audioSrc":"./sounds/snare.wav","ms":2180.5253802093616},{"audioSrc":"./sounds/kick.wav","ms":2525.5118835999733},{"audioSrc":"./sounds/hihat.wav","ms":2352.977483705313},{"audioSrc":"./sounds/clap.wav","ms":2174.0361445783133},{"audioSrc":"./sounds/boom.wav","ms":2716.562973204292},{"audioSrc":"./sounds/hihat.wav","ms":2701.95536243334},{"audioSrc":"./sounds/cowbell_muted.wav","ms":2354.1502073869246},{"audioSrc":"./sounds/openhat.wav","ms":2902.100204095069},{"audioSrc":"./sounds/kick.wav","ms":2903.3757982750676},{"audioSrc":"./sounds/boom.wav","ms":2906.0092830337744},{"audioSrc":"./sounds/cowbell.wav","ms":2915.2083744815327},{"audioSrc":"./sounds/tink.wav","ms":3266.796694976628},{"audioSrc":"./sounds/tom.wav","ms":3435.339719533873},{"audioSrc":"./sounds/cowbell.wav","ms":3599.2083744815327},{"audioSrc":"./sounds/clap.wav","ms":3613.099940746593},{"audioSrc":"./sounds/snare.wav","ms":3627.584106919481},{"audioSrc":"./sounds/tink.wav","ms":3630.217591678188},{"audioSrc":"./sounds/cowbell_muted.wav","ms":3976.356244650734},{"audioSrc":"./sounds/kick.wav","ms":4149.0140891434585},{"audioSrc":"./sounds/cowbell.wav","ms":4322.824083218118},{"audioSrc":"./sounds/tom.wav","ms":4522.968924879848},{"audioSrc":"./sounds/kick.wav","ms":4696.7789189545065},{"audioSrc":"./sounds/cowbell_muted.wav","ms":4697.457864243861},{"audioSrc":"./sounds/boom.wav","ms":4707.312857989335},{"audioSrc":"./sounds/cowbell.wav","ms":5033.991507011653},{"audioSrc":"./sounds/clap.wav","ms":5064.244519059846},{"audioSrc":"./sounds/snare.wav","ms":5070.733754690895},{"audioSrc":"./sounds/hihat.wav","ms":5243.1858581868455},{"audioSrc":"./sounds/cowbell_muted.wav","ms":5244.358581868458},{"audioSrc":"./sounds/kick.wav","ms":5415.7202580815065},{"audioSrc":"./sounds/hihat.wav","ms":5592.163736914872},{"audioSrc":"./sounds/boom.wav","ms":5606.771347685824}]}`,
+        "beat-3": `{"bpm":120,"measures":2,"notes":[{"audioSrc":"./sounds/kick.wav","measure":0,"beat":0,"fraction":0.026359143327841845},{"audioSrc":"./sounds/tink.wav","measure":0,"beat":0,"fraction":0.572},{"audioSrc":"./sounds/hihat.wav","measure":0,"beat":0,"fraction":0.506},{"audioSrc":"./sounds/hihat.wav","measure":0,"beat":0,"fraction":0.04612850082372323},{"audioSrc":"./sounds/kick.wav","measure":0,"beat":1,"fraction":0.542009884678748},{"audioSrc":"./sounds/snare.wav","measure":0,"beat":1,"fraction":0.084},{"audioSrc":"./sounds/tink.wav","measure":0,"beat":1,"fraction":0.54},{"audioSrc":"./sounds/tom.wav","measure":0,"beat":1,"fraction":0.27543245469522254},{"audioSrc":"./sounds/tom.wav","measure":0,"beat":1,"fraction":0.5209277182866556},{"audioSrc":"./sounds/tom.wav","measure":0,"beat":1,"fraction":0.018765444810543614},{"audioSrc":"./sounds/clap.wav","measure":0,"beat":2,"fraction":0.04283360790774304},{"audioSrc":"./sounds/tink.wav","measure":0,"beat":2,"fraction":0.54},{"audioSrc":"./sounds/hihat.wav","measure":0,"beat":2,"fraction":0.5172981878088962},{"audioSrc":"./sounds/boom.wav","measure":0,"beat":2,"fraction":0.08},{"audioSrc":"./sounds/kick.wav","measure":0,"beat":3,"fraction":0.5321252059308071},{"audioSrc":"./sounds/snare.wav","measure":0,"beat":3,"fraction":0.06425041186161434},{"audioSrc":"./sounds/tink.wav","measure":0,"beat":3,"fraction":0.574},{"audioSrc":"./sounds/hihat.wav","measure":0,"beat":3,"fraction":0.018121911037891094},{"audioSrc":"./sounds/kick.wav","measure":1,"beat":0,"fraction":0.520593080724876},{"audioSrc":"./sounds/tink.wav","measure":1,"beat":0,"fraction":0.019769357495881195},{"audioSrc":"./sounds/cowbell.wav","measure":1,"beat":0,"fraction":0.032948929159802444},{"audioSrc":"./sounds/cowbell.wav","measure":1,"beat":0,"fraction":0.9818780889621085},{"audioSrc":"./sounds/hihat.wav","measure":1,"beat":0,"fraction":0.015007207578254111},{"audioSrc":"./sounds/hihat.wav","measure":1,"beat":0,"fraction":0.5061264415156511},{"audioSrc":"./sounds/kick.wav","measure":1,"beat":1,"fraction":0.034596375617792545},{"audioSrc":"./sounds/snare.wav","measure":1,"beat":1,"fraction":0.5090609555189458},{"audioSrc":"./sounds/tink.wav","measure":1,"beat":1,"fraction":0.5354200988467883},{"audioSrc":"./sounds/tink.wav","measure":1,"beat":1,"fraction":0.007567957166392261},{"audioSrc":"./sounds/tom.wav","measure":1,"beat":1,"fraction":0.2850082372322904},{"audioSrc":"./sounds/tom.wav","measure":1,"beat":1,"fraction":0.5024711696869854},{"audioSrc":"./sounds/clap.wav","measure":1,"beat":2,"fraction":0.016474464579900996},{"audioSrc":"./sounds/tink.wav","measure":1,"beat":2,"fraction":0.504118616144975},{"audioSrc":"./sounds/cowbell.wav","measure":1,"beat":2,"fraction":0.009884678747940598},{"audioSrc":"./sounds/cowbell_muted.wav","measure":1,"beat":2,"fraction":0.4992535008237237},{"audioSrc":"./sounds/hihat.wav","measure":1,"beat":2,"fraction":0.5124588138385497},{"audioSrc":"./sounds/boom.wav","measure":1,"beat":2,"fraction":0.023064250411861394},{"audioSrc":"./sounds/openhat.wav","measure":1,"beat":2,"fraction":0.49093904448105424},{"audioSrc":"./sounds/ride.wav","measure":1,"beat":2,"fraction":0.003294892915980199},{"audioSrc":"./sounds/kick.wav","measure":1,"beat":3,"fraction":0.004942339373970753},{"audioSrc":"./sounds/snare.wav","measure":1,"beat":3,"fraction":0.03130148270181144},{"audioSrc":"./sounds/cowbell_muted.wav","measure":1,"beat":3,"fraction":0.4969110378912683},{"audioSrc":"./sounds/hihat.wav","measure":1,"beat":3,"fraction":0.5112747116968694}]}`,
 
-        "beat-3": `{"bpm":120,"measures":2,"notes":[{"audioSrc":"./sounds/kick.wav","ms":13.179571663920923},{"audioSrc":"./sounds/tink.wav","ms":286},{"audioSrc":"./sounds/hihat.wav","ms":253},{"audioSrc":"./sounds/hihat.wav","ms":23.064250411861615},{"audioSrc":"./sounds/kick.wav","ms":771.004942339374},{"audioSrc":"./sounds/snare.wav","ms":542},{"audioSrc":"./sounds/tink.wav","ms":770},{"audioSrc":"./sounds/tom.wav","ms":637.7162273476113},{"audioSrc":"./sounds/tom.wav","ms":760.4638591433278},{"audioSrc":"./sounds/tom.wav","ms":509.3827224052718},{"audioSrc":"./sounds/clap.wav","ms":1021.4168039538715},{"audioSrc":"./sounds/tink.wav","ms":1270},{"audioSrc":"./sounds/hihat.wav","ms":1258.6490939044481},{"audioSrc":"./sounds/boom.wav","ms":1040},{"audioSrc":"./sounds/kick.wav","ms":1766.0626029654036},{"audioSrc":"./sounds/snare.wav","ms":1532.1252059308072},{"audioSrc":"./sounds/tink.wav","ms":1787},{"audioSrc":"./sounds/hihat.wav","ms":1509.0609555189455},{"audioSrc":"./sounds/kick.wav","ms":2260.296540362438},{"audioSrc":"./sounds/tink.wav","ms":2009.8846787479406},{"audioSrc":"./sounds/cowbell.wav","ms":2016.4744645799012},{"audioSrc":"./sounds/cowbell.wav","ms":2490.939044481054},{"audioSrc":"./sounds/hihat.wav","ms":2007.503603789127},{"audioSrc":"./sounds/hihat.wav","ms":2253.0632207578255},{"audioSrc":"./sounds/kick.wav","ms":2517.2981878088963},{"audioSrc":"./sounds/snare.wav","ms":2754.530477759473},{"audioSrc":"./sounds/tink.wav","ms":2767.710049423394},{"audioSrc":"./sounds/tink.wav","ms":2503.783978583196},{"audioSrc":"./sounds/tom.wav","ms":2642.504118616145},{"audioSrc":"./sounds/tom.wav","ms":2751.2355848434927},{"audioSrc":"./sounds/clap.wav","ms":3008.2372322899505},{"audioSrc":"./sounds/tink.wav","ms":3252.0593080724875},{"audioSrc":"./sounds/cowbell.wav","ms":3004.9423393739703},{"audioSrc":"./sounds/cowbell_muted.wav","ms":3249.626750411862},{"audioSrc":"./sounds/hihat.wav","ms":3256.229406919275},{"audioSrc":"./sounds/boom.wav","ms":3011.5321252059307},{"audioSrc":"./sounds/openhat.wav","ms":3245.469522240527},{"audioSrc":"./sounds/ride.wav","ms":3001.64744645799},{"audioSrc":"./sounds/kick.wav","ms":3502.4711696869854},{"audioSrc":"./sounds/snare.wav","ms":3515.6507413509057},{"audioSrc":"./sounds/cowbell_muted.wav","ms":3748.455518945634},{"audioSrc":"./sounds/hihat.wav","ms":3755.6373558484347}]}`,
+        "beat-4": `{"bpm":"160","measures":"4","notes":[{"audioSrc":"./sounds/kick.wav","measure":0,"beat":0,"fraction":0},{"audioSrc":"./sounds/kick.wav","measure":0,"beat":1,"fraction":0.5065805888223553},{"audioSrc":"./sounds/hihat.wav","measure":0,"beat":1,"fraction":0.0090090090090089},{"audioSrc":"./sounds/snare.wav","measure":0,"beat":2,"fraction":0.010853293413173787},{"audioSrc":"./sounds/hihat.wav","measure":0,"beat":2,"fraction":0.5079216566866269},{"audioSrc":"./sounds/kick.wav","measure":0,"beat":2,"fraction":0.5095638867635808},{"audioSrc":"./sounds/snare.wav","measure":0,"beat":3,"fraction":0.5118755118755121},{"audioSrc":"./sounds/snare.wav","measure":1,"beat":0,"fraction":0.5109780439121759},{"audioSrc":"./sounds/kick.wav","measure":1,"beat":1,"fraction":0.005988023952095318},{"audioSrc":"./sounds/hihat.wav","measure":1,"beat":1,"fraction":0.0057330057330056096},{"audioSrc":"./sounds/snare.wav","measure":1,"beat":2,"fraction":0.011976047904191546},{"audioSrc":"./sounds/kick.wav","measure":1,"beat":2,"fraction":0.5049900199600798},{"audioSrc":"./sounds/hihat.wav","measure":1,"beat":2,"fraction":0.5069860279441119},{"audioSrc":"./sounds/hihat.wav","measure":1,"beat":3,"fraction":0.5077881619937689},{"audioSrc":"./sounds/kick.wav","measure":2,"beat":0,"fraction":0.030604437643457275},{"audioSrc":"./sounds/snare.wav","measure":2,"beat":0,"fraction":0.006120887528691431},{"audioSrc":"./sounds/hihat.wav","measure":2,"beat":1,"fraction":0.039613446652466175},{"audioSrc":"./sounds/kick.wav","measure":2,"beat":1,"fraction":0.537185026465813},{"audioSrc":"./sounds/snare.wav","measure":2,"beat":2,"fraction":0.04145773105663088},{"audioSrc":"./sounds/hihat.wav","measure":2,"beat":2,"fraction":0.5385260943300842},{"audioSrc":"./sounds/kick.wav","measure":2,"beat":2,"fraction":0.5156847742922728},{"audioSrc":"./sounds/snare.wav","measure":2,"beat":3,"fraction":0.5424799495189687},{"audioSrc":"./sounds/snare.wav","measure":3,"beat":0,"fraction":0.4743687834736047},{"audioSrc":"./sounds/snare.wav","measure":3,"beat":1,"fraction":0.013006885998470304},{"audioSrc":"./sounds/snare.wav","measure":3,"beat":1,"fraction":0.4904361132364202},{"audioSrc":"./sounds/snare.wav","measure":3,"beat":1,"fraction":0.9923488905891369},{"audioSrc":"./sounds/beatbox/beatboxKick.wav","measure":3,"beat":1,"fraction":0.013006885998470049},{"audioSrc":"./sounds/snare.wav","measure":3,"beat":2,"fraction":0.9961744452945667},{"audioSrc":"./sounds/snare.wav","measure":3,"beat":2,"fraction":0.2739097169089513},{"audioSrc":"./sounds/snare.wav","measure":3,"beat":2,"fraction":0.49426166794184995},{"audioSrc":"./sounds/beatbox/beatboxKick.wav","measure":3,"beat":2,"fraction":0.004590665646520695},{"audioSrc":"./sounds/snare.wav","measure":3,"beat":3,"fraction":0.5225707727620489},{"audioSrc":"./sounds/beatbox/beatboxKick.wav","measure":3,"beat":3,"fraction":0.008416220351949354}]}`,
 
-        "beat-6": `{"bpm":120,"measures":"4","notes":[{"audioSrc":"./sounds/kick.wav","ms":19.71830985915493},{"audioSrc":"./sounds/clap.wav","ms":504.22535211267603},{"audioSrc":"./sounds/kick.wav","ms":1247.8873239436618},{"audioSrc":"./sounds/clap.wav","ms":1504.225352112676},{"audioSrc":"./sounds/kick.wav","ms":2005.6338028169014},{"audioSrc":"./sounds/clap.wav","ms":2490.1408450704225},{"audioSrc":"./sounds/kick.wav","ms":2754.9295774647885},{"audioSrc":"./sounds/kick.wav","ms":3233.8028169014083},{"audioSrc":"./sounds/clap.wav","ms":3490.1408450704225},{"audioSrc":"./sounds/kick.wav","ms":3753.0072173215717},{"audioSrc":"./sounds/kick.wav","ms":4005.6338028169016},{"audioSrc":"./sounds/clap.wav","ms":4490.140845070423},{"audioSrc":"./sounds/kick.wav","ms":5233.802816901409},{"audioSrc":"./sounds/clap.wav","ms":5490.140845070423},{"audioSrc":"./sounds/kick.wav","ms":6005.633802816901},{"audioSrc":"./sounds/kick.wav","ms":6761.828388131516},{"audioSrc":"./sounds/clap.wav","ms":7008.450704225353},{"audioSrc":"./sounds/clap.wav","ms":7256.338028169014},{"audioSrc":"./sounds/clap.wav","ms":7509.859154929577},{"audioSrc":"./sounds/clap.wav","ms":7752.112676056338},{"audioSrc":"./sounds/clap.wav","ms":7639.43661971831},{"audioSrc":"./sounds/ride.wav","ms":7545}]}`,
+        "beat-5": `{"bpm":"96","measures":"4","notes":[{"audioSrc":"./sounds/kick.wav","measure":0,"beat":0,"fraction":0.019656019656019656},{"audioSrc":"./sounds/kick.wav","measure":0,"beat":0,"fraction":0.5110565110565111},{"audioSrc":"./sounds/kick.wav","measure":0,"beat":1,"fraction":0.9983619983619985},{"audioSrc":"./sounds/kick.wav","measure":0,"beat":1,"fraction":0.009009009009008877},{"audioSrc":"./sounds/snare.wav","measure":0,"beat":1,"fraction":0.009009009009008877},{"audioSrc":"./sounds/snare.wav","measure":0,"beat":1,"fraction":0.2710892710892711},{"audioSrc":"./sounds/hihat.wav","measure":0,"beat":1,"fraction":0.5140186915887851},{"audioSrc":"./sounds/kick.wav","measure":0,"beat":2,"fraction":0.7518427518427521},{"audioSrc":"./sounds/hihat.wav","measure":0,"beat":2,"fraction":0.008567217387310666},{"audioSrc":"./sounds/hihat.wav","measure":0,"beat":2,"fraction":0.5150424426125355},{"audioSrc":"./sounds/kick.wav","measure":0,"beat":3,"fraction":0.013923013923013969},{"audioSrc":"./sounds/snare.wav","measure":0,"beat":3,"fraction":0.018},{"audioSrc":"./sounds/kick.wav","measure":1,"beat":0,"fraction":0.016380016380016512},{"audioSrc":"./sounds/kick.wav","measure":1,"beat":0,"fraction":0.5068847256347262},{"audioSrc":"./sounds/kick.wav","measure":1,"beat":1,"fraction":0.012285012285012272},{"audioSrc":"./sounds/snare.wav","measure":1,"beat":1,"fraction":0.01883701883701906},{"audioSrc":"./sounds/snare.wav","measure":1,"beat":1,"fraction":0.27436527436527397},{"audioSrc":"./sounds/snare.wav","measure":1,"beat":1,"fraction":0.7601863226863228},{"audioSrc":"./sounds/hihat.wav","measure":1,"beat":1,"fraction":0.5022455548156489},{"audioSrc":"./sounds/hihat.wav","measure":1,"beat":1,"fraction":0.9967940806141734},{"audioSrc":"./sounds/kick.wav","measure":1,"beat":2,"fraction":0.014742014742014363},{"audioSrc":"./sounds/kick.wav","measure":1,"beat":2,"fraction":0.7485667485667482},{"audioSrc":"./sounds/hihat.wav","measure":1,"beat":2,"fraction":0.5032693058393998},{"audioSrc":"./sounds/kick.wav","measure":1,"beat":3,"fraction":0.01},{"audioSrc":"./sounds/snare.wav","measure":1,"beat":3,"fraction":0.26479750778816236},{"audioSrc":"./sounds/kick.wav","measure":2,"beat":0,"fraction":0.024922118380061874},{"audioSrc":"./sounds/kick.wav","measure":2,"beat":0,"fraction":0.5109034267912764},{"audioSrc":"./sounds/ride.wav","measure":2,"beat":0,"fraction":0.014602803738319198},{"audioSrc":"./sounds/openhat.wav","measure":2,"beat":0,"fraction":0.014602803738319198},{"audioSrc":"./sounds/kick.wav","measure":2,"beat":1,"fraction":0.009345794392522658},{"audioSrc":"./sounds/snare.wav","measure":2,"beat":1,"fraction":0.009345794392522658},{"audioSrc":"./sounds/snare.wav","measure":2,"beat":1,"fraction":0.27102803738317743},{"audioSrc":"./sounds/hihat.wav","measure":2,"beat":1,"fraction":0.5202492211838006},{"audioSrc":"./sounds/cowbell_muted.wav","measure":2,"beat":1,"fraction":0.004964953271027479},{"audioSrc":"./sounds/kick.wav","measure":2,"beat":2,"fraction":0.006230529595015105},{"audioSrc":"./sounds/hihat.wav","measure":2,"beat":2,"fraction":0.01869158878504677},{"audioSrc":"./sounds/hihat.wav","measure":2,"beat":2,"fraction":0.5171339563862916},{"audioSrc":"./sounds/kick.wav","measure":2,"beat":2,"fraction":0.7538940809968845},{"audioSrc":"./sounds/kick.wav","measure":2,"beat":3,"fraction":0.015576323987537763},{"audioSrc":"./sounds/snare.wav","measure":2,"beat":3,"fraction":0.02803738317757088},{"audioSrc":"./sounds/cowbell_muted.wav","measure":2,"beat":3,"fraction":0.005110981308411283},{"audioSrc":"./sounds/kick.wav","measure":3,"beat":0,"fraction":0.024922118380061874},{"audioSrc":"./sounds/kick.wav","measure":3,"beat":0,"fraction":0.5109034267912764},{"audioSrc":"./sounds/ride.wav","measure":3,"beat":0,"fraction":0.0009248442367606913},{"audioSrc":"./sounds/openhat.wav","measure":3,"beat":0,"fraction":0.0009248442367606913},{"audioSrc":"./sounds/kick.wav","measure":3,"beat":1,"fraction":0.021806853582554322},{"audioSrc":"./sounds/snare.wav","measure":3,"beat":1,"fraction":0.021806853582554322},{"audioSrc":"./sounds/snare.wav","measure":3,"beat":1,"fraction":0.28348909657321053},{"audioSrc":"./sounds/hihat.wav","measure":3,"beat":1,"fraction":0.5077881619937689},{"audioSrc":"./sounds/snare.wav","measure":3,"beat":1,"fraction":0.7694704049844237},{"audioSrc":"./sounds/hihat.wav","measure":3,"beat":2,"fraction":0.006230529595015105},{"audioSrc":"./sounds/kick.wav","measure":3,"beat":2,"fraction":0.018691588785045316},{"audioSrc":"./sounds/hihat.wav","measure":3,"beat":2,"fraction":0.5046728971962613},{"audioSrc":"./sounds/kick.wav","measure":3,"beat":2,"fraction":0.7538940809968859},{"audioSrc":"./sounds/kick.wav","measure":3,"beat":3,"fraction":0.015576323987537763},{"audioSrc":"./sounds/snare.wav","measure":3,"beat":3,"fraction":0.26479750778816236}]}`,
 
-        "beat-box-2": `{"bpm":120,"measures":2,"notes":[{"audioSrc":"./sounds/beatbox/beatbox_Tick.wav","ms":379.4950267788829},{"audioSrc":"./sounds/beatbox/beatboxKick.wav","ms":137.71996939556234},{"audioSrc":"./sounds/beatbox/beatbox_KickExplosive.wav","ms":3.06044376434583},{"audioSrc":"./sounds/beatbox/beatbox_KickExplosive.wav","ms":257.0772762050497},{"audioSrc":"./sounds/beatbox/beatboxRim.wav","ms":504.973221117062},{"audioSrc":"./sounds/beatbox/beatbox_BackwardsSnare.wav","ms":749.8087222647284},{"audioSrc":"./sounds/beatbox/beatboxKickHic.wav","ms":1003.8255547054322},{"audioSrc":"./sounds/beatbox/beatboxRim.wav","ms":1499.6174445294569},{"audioSrc":"./sounds/beatbox/beatbox_Tick.wav","ms":2384.0856924254017},{"audioSrc":"./sounds/beatbox/beatbox_KickExplosive.wav","ms":2004.5906656465186},{"audioSrc":"./sounds/beatbox/beatbox_KickExplosive.wav","ms":2258.6074980872227},{"audioSrc":"./sounds/beatbox/beatboxKick.wav","ms":2123.947972456006},{"audioSrc":"./sounds/beatbox/beatboxRim.wav","ms":2506.503442999235},{"audioSrc":"./sounds/beatbox/beatbox_BackwardsSnare.wav","ms":2754.399387911247},{"audioSrc":"./sounds/beatbox/beatboxKickHic.wav","ms":3002.2953328232593},{"audioSrc":"./sounds/beatbox/beatbox_Tick.wav","ms":3387.911247130834},{"audioSrc":"./sounds/beatbox/beatboxRim.wav","ms":3501.14766641163},{"audioSrc":"./sounds/beatbox/beatbox_Tick.wav","ms":3878},{"audioSrc":"./sounds/beatbox/beatbox_Tick.wav","ms":3755.1644988523335},{"audioSrc":"./sounds/beatbox/beatbox_Tick.wav","ms":3632.7467482785005}]}`,
+        "beat-6": `{"bpm":120,"measures":"4","notes":[{"audioSrc":"./sounds/kick.wav","measure":0,"beat":0,"fraction":0.03943661971830986},{"audioSrc":"./sounds/clap.wav","measure":0,"beat":1,"fraction":0.00845070422535207},{"audioSrc":"./sounds/kick.wav","measure":0,"beat":2,"fraction":0.49577464788732367},{"audioSrc":"./sounds/clap.wav","measure":0,"beat":3,"fraction":0.008450704225352183},{"audioSrc":"./sounds/kick.wav","measure":1,"beat":0,"fraction":0.011267605633802759},{"audioSrc":"./sounds/clap.wav","measure":1,"beat":0,"fraction":0.9802816901408451},{"audioSrc":"./sounds/kick.wav","measure":1,"beat":1,"fraction":0.509859154929577},{"audioSrc":"./sounds/kick.wav","measure":1,"beat":2,"fraction":0.46760563380281656},{"audioSrc":"./sounds/clap.wav","measure":1,"beat":2,"fraction":0.9802816901408451},{"audioSrc":"./sounds/kick.wav","measure":1,"beat":3,"fraction":0.5060144346431434},{"audioSrc":"./sounds/kick.wav","measure":2,"beat":0,"fraction":0.011267605633803215},{"audioSrc":"./sounds/clap.wav","measure":2,"beat":0,"fraction":0.980281690140846},{"audioSrc":"./sounds/kick.wav","measure":2,"beat":2,"fraction":0.46760563380281744},{"audioSrc":"./sounds/clap.wav","measure":2,"beat":2,"fraction":0.980281690140846},{"audioSrc":"./sounds/kick.wav","measure":3,"beat":0,"fraction":0.011267605633802304},{"audioSrc":"./sounds/kick.wav","measure":3,"beat":1,"fraction":0.5236567762630311},{"audioSrc":"./sounds/clap.wav","measure":3,"beat":2,"fraction":0.016901408450705275},{"audioSrc":"./sounds/clap.wav","measure":3,"beat":2,"fraction":0.5126760563380285},{"audioSrc":"./sounds/clap.wav","measure":3,"beat":3,"fraction":0.019718309859154032},{"audioSrc":"./sounds/clap.wav","measure":3,"beat":3,"fraction":0.5042253521126768},{"audioSrc":"./sounds/clap.wav","measure":3,"beat":3,"fraction":0.2788732394366198},{"audioSrc":"./sounds/ride.wav","measure":3,"beat":3,"fraction":0.09}]}`,
+
+        "beat-box-2": `{"bpm":120,"measures":2,"notes":[{"audioSrc":"./sounds/beatbox/beatbox_Tick.wav","measure":0,"beat":0,"fraction":0.7589900535577658},{"audioSrc":"./sounds/beatbox/beatboxKick.wav","measure":0,"beat":0,"fraction":0.2754399387911247},{"audioSrc":"./sounds/beatbox/beatbox_KickExplosive.wav","measure":0,"beat":0,"fraction":0.00612088752869166},{"audioSrc":"./sounds/beatbox/beatbox_KickExplosive.wav","measure":0,"beat":0,"fraction":0.5141545524100994},{"audioSrc":"./sounds/beatbox/beatboxRim.wav","measure":0,"beat":1,"fraction":0.009946442234123993},{"audioSrc":"./sounds/beatbox/beatbox_BackwardsSnare.wav","measure":0,"beat":1,"fraction":0.4996174445294569},{"audioSrc":"./sounds/beatbox/beatboxKickHic.wav","measure":0,"beat":2,"fraction":0.007651109410864365},{"audioSrc":"./sounds/beatbox/beatboxRim.wav","measure":0,"beat":2,"fraction":0.9992348890589138},{"audioSrc":"./sounds/beatbox/beatbox_Tick.wav","measure":1,"beat":0,"fraction":0.7681713848508034},{"audioSrc":"./sounds/beatbox/beatbox_KickExplosive.wav","measure":1,"beat":0,"fraction":0.009181331293037148},{"audioSrc":"./sounds/beatbox/beatbox_KickExplosive.wav","measure":1,"beat":0,"fraction":0.5172149961744453},{"audioSrc":"./sounds/beatbox/beatboxKick.wav","measure":1,"beat":0,"fraction":0.24789594491201206},{"audioSrc":"./sounds/beatbox/beatboxRim.wav","measure":1,"beat":1,"fraction":0.013006885998470353},{"audioSrc":"./sounds/beatbox/beatbox_BackwardsSnare.wav","measure":1,"beat":1,"fraction":0.5087987758224936},{"audioSrc":"./sounds/beatbox/beatboxKickHic.wav","measure":1,"beat":2,"fraction":0.004590665646518574},{"audioSrc":"./sounds/beatbox/beatbox_Tick.wav","measure":1,"beat":2,"fraction":0.775822494261668},{"audioSrc":"./sounds/beatbox/beatboxRim.wav","measure":1,"beat":3,"fraction":0.0022953328232597414},{"audioSrc":"./sounds/beatbox/beatbox_Tick.wav","measure":1,"beat":3,"fraction":0.756},{"audioSrc":"./sounds/beatbox/beatbox_Tick.wav","measure":1,"beat":3,"fraction":0.510328997704667},{"audioSrc":"./sounds/beatbox/beatbox_Tick.wav","measure":1,"beat":3,"fraction":0.265493496557001}]}`,
     };
     document
         .getElementById("presets-select")
@@ -1895,14 +1937,6 @@ db   8D `8b  d8' 88  V888 88. ~8~    d8'         88    88 `88. 88   88 Y8b  d8 8
     document.getElementById("lightshow").addEventListener("change", (event) => {
         lightFrequency = parseInt(event.currentTarget.value);
     });
-
-    document
-        .getElementById("quantize-frequency")
-        .addEventListener("change", (event) => {
-            quantizePrecision = parseInt(event.currentTarget.value);
-            quantizeTrack();
-            document.activeElement.blur();
-        });
 
     const buildLibraryPulldown = () => {
         const libSelector = document.getElementById("library-select");
@@ -1962,14 +1996,13 @@ db   8D `8b  d8' 88  V888 88. ~8~    d8'         88    88 `88. 88   88 Y8b  d8 8
             */
 
 // TESTING V
-const keysDown = [];
 
 const light = document.getElementById("beat-light");
 window.addEventListener("keydown", (event) => {
     if (event.code === "KeyT") {
         // 'T' (testing)
-        if (!keysDown.includes("KeyT")) {
-            keysDown.push("KeyT");
+        if (!keysDown.includes(84)) {
+            keysDown.push(84);
             light.classList.add("on");
         }
     }

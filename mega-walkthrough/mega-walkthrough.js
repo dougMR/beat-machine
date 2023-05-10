@@ -1,3 +1,11 @@
+/*
+
+Ideas to add:
+
+ - clicking / touching outside of panel should close panel
+
+*/
+
 // Thanks to https://bobbyhadz.com/blog/javascript-find-highest-z-index-on-page
 function getMaxZIndex() {
     return Math.max(
@@ -45,9 +53,14 @@ var megaWalkthrough =
         // set copy for megaSteps elements
         const setCopy = (copyAr) => {
             // Length of copyAr needs to match megaSteps
+            // console.log('copyAr',copyAr);
+            // console.log('megaSteps.length',megaSteps.length);
             for (let stepNum = 0; stepNum < megaSteps.length; stepNum++) {
-                megaSteps[stepNum].title = copyAr[stepNum][0];
-                megaSteps[stepNum].copy = copyAr[stepNum][1];
+                if(copyAr[stepNum]){
+                    // might not be
+                    megaSteps[stepNum].title = copyAr[stepNum][0];
+                    megaSteps[stepNum].copy = copyAr[stepNum][1];
+                }
             }
         };
         const buildPlacard = () => {

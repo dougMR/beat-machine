@@ -12,6 +12,11 @@
     box-shadow: 0 5px 10px 5px rgba(0, 0, 0, 0.2);
 }
 
+.mega-placard .back:focus-visible,
+.mega-placard .next:focus-visible {
+    outline: none;
+}
+
 .mega-placard.hidden {
     display: none;
 }
@@ -28,8 +33,10 @@
 }
 
 .mega-placard header .close {
+    font-size: 1.5rem;
     vertical-align: top;
-    padding: 0 0.5rem;
+    text-align: right;
+    padding: 0 0.1rem;
     user-select: none;
     cursor: pointer;
 }
