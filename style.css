@@ -275,10 +275,15 @@ button.on {
     justify-content: center;
     align-items: center;
     font-family: sans-serif;
-    font-size: 1.3rem;
+    font-size: 1.2rem;
     font-weight: 600;
     text-shadow: -0.05em -0.05em 0.1em rgba(0, 0, 0, 0.5);
     /* margin-bottom: 2rem; */
+}
+#edit-light p::first-letter {
+    color: #8bd7f0;
+    font-size: 1.3rem;
+
 }
 #rec-light {
     background-color: #831414;
@@ -339,6 +344,11 @@ button.on {
     color: #cde6ff;
     border: 3px solid #1775d3;
     z-index: 10;
+}
+#edit-light.on p::first-letter {
+    color: #cde6ff;
+    font-size: 1em;
+
 }
 #edit-light::after {
     /* content: ""; */
@@ -785,8 +795,8 @@ section#keys-help-panel .close:hover {
 }
 
 /* #code-controls button, */
-#track-tools #presets,
-#track-tools #lightshow,
+/* #track-tools #presets, */
+/* #track-tools #lightshow, */
 /* #track-tools button {
     --color: goldenrod;
     --hilight: #ffeb7a;
@@ -845,7 +855,7 @@ section#keys-help-panel .close:hover {
     padding: 0;
     text-align: right;
 } */
-#track-tools button::after {
+/* #track-tools button::after {
     content: "";
     position: absolute;
     left: 0;
@@ -853,12 +863,9 @@ section#keys-help-panel .close:hover {
     width: 100%;
     height: 100%;
     border-radius: 0.4rem;
-    /* box-shadow: 0.5rem 0.5rem 0.5rem rgba(0, 0, 0, 0.5); */
     mix-blend-mode: multiply;
-    /* background-color:pink; */
 }
 #track-tools button::before {
-    /* box-shadow: 0.2rem 0.2rem 0.3rem -0.1rem rgba(0, 0, 0, 0.5); */
     mix-blend-mode: multiply;
     content: "";
     border-radius: 0.4rem;
@@ -867,16 +874,30 @@ section#keys-help-panel .close:hover {
     right: -1px;
     left: 0;
     bottom: -1px;
-}
+} */
 #track-tools button:hover,
-#track-tools button.on {
+#track-tools button.on,
+#track-tools select:hover {
     color: white;
 }
-#track-tools button:hover::after,
-#track-tools button.on::after {
-    box-shadow: 0 0 1.5rem -0.5rem white, 0 0 1rem rgba(207, 232, 255, 0.5),
+#track-tools button:hover,
+#track-tools button.on,
+#track-tools select:hover {
+    box-shadow: inset 0.1rem 0.2rem 0.2rem var(--hilight),
+        inset -0.1rem -0.2rem 0.2rem var(--shadow),
+        0.2rem 0.1rem 0.3rem 0.1rem rgba(255, 255, 255, 0.2),
+        -0.1rem -0.1rem 0.3rem 0 rgba(0, 0, 0, 0.5), 0 0 1.5rem -0.5rem white,
+        0 0 1rem rgba(207, 232, 255, 0.5),
         0.5rem 0.5rem 0.5rem rgba(0, 0, 0, 0.5);
     mix-blend-mode: unset;
+}
+
+#track-tools button:active {
+    font-size: 0.65rem;
+    box-shadow: inset 0.1rem 0.2rem 0.2rem var(--shadow),
+        inset -0.1rem -0.2rem 0.2rem var(--hilight),
+        0.2rem 0.1rem 0.3rem 0.1rem rgba(255, 255, 255, 0.2),
+        -0.1rem -0.1rem 0.3rem 0 rgba(0, 0, 0, 0.5);
 }
 #track-tools button#get-code-button,
 #track-tools button.on::after {
@@ -979,7 +1000,7 @@ section#keys-help-panel .close:hover {
     user-select: none;
     /* border: 2px solid black; */
     text-align: center;
-    text-shadow:  0.2em -0.2em 0.2em black;
+    text-shadow: 0.2em -0.2em 0.2em black;
     min-width: 16em;
     margin: 1vh 0 2vh;
 }

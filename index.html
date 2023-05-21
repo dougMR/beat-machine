@@ -23,10 +23,10 @@
             </header>
             <main>
                 <div id="help-icon" data-mega-step="0">?</div>
-                <div id="key-help-icon">?</div>
+                <div id="key-help-icon" data-mega-step="1">?</div>
                 <div id="drumpad">
                     <div id="sliders">
-                        <div class="slidecontainer" data-mega-step="7">
+                        <div class="slidecontainer" data-mega-step="70">
                             <div class="info tempo">
                                 <label for="tempo-slider">TEMPO</label>
                                 <span class="value">125</span>
@@ -40,7 +40,7 @@
                                 class="slider"
                             />
                         </div>
-                        <div class="slidecontainer" data-mega-step="8">
+                        <div class="slidecontainer" data-mega-step="80">
                             <div class="info measure">
                                 <label for="measures-slider">MEASURES</label>
                                 <span class="value">2</span>
@@ -50,7 +50,7 @@
                                 id="measures-slider"
                                 type="range"
                                 min="1"
-                                max="4"
+                                max="12"
                                 value="2"
                                 class="slider"
                             />
@@ -60,31 +60,33 @@
                         <div
                             id="beat-light"
                             class="light"
-                            data-mega-step="2"
+                            data-mega-step="20"
                         ></div>
-                        <div id="rec-light" class="light" data-mega-step="3">
+                        <div id="rec-light" class="light" data-mega-step="30">
                             R
                         </div>
-                        <div id="clear-light" class="light" data-mega-step="4">
+                        <div id="clear-light" class="light" data-mega-step="40">
                             X
                         </div>
                         <div
                             id="quantize-light"
                             class="light"
-                            data-mega-step="5"
+                            data-mega-step="50"
                         >
                             Q
                         </div>
                         <div
                             id="edit-light"
                             class="light rect"
-                            data-mega-step="6"
+                            data-mega-step="60"
                         >
+                        <p>
                             Edit
+                        </p>
                         </div>
                     </div>
 
-                    <div id="keys" data-mega-step="1">
+                    <div id="keys" data-mega-step="10">
                         <!-- <div class="key" data-key="KeyA">
                             <kbd>A</kbd>
                             <span class="sound">clap</span>
@@ -134,7 +136,7 @@
                 </div>
 
                 <div id="playhead-gutter"></div>
-                <div id="track" data-mega-step="9">
+                <div id="track" data-mega-step="90">
                     <div id="beats"></div>
                     <div id="playhead"></div>
                     <div id="beat-icons"></div>
@@ -147,7 +149,7 @@
                             <option value="">sample library</option>
                         </select>
 
-                        <button id="sample-selector-button" data-mega-step="11">
+                        <button id="sample-selector-button" data-mega-step="110">
                             Samples à la carte
                         </button>
                         <div id="sample-selector-panel" class="hidden">
@@ -159,7 +161,7 @@
                         </div>
                     </div>
                     <div id="code-controls">
-                        <button id="get-code-button" data-mega-step="13">
+                        <button id="get-code-button" data-mega-step="130">
                             Get Code
                         </button>
                         <!-- <fieldset
@@ -171,12 +173,12 @@
                             name="code"
                             id="code-input"
                             size="10"
-                        /><button id="enter-code-button" data-mega-step="14">
+                        /><button id="enter-code-button" data-mega-step="140">
                             Enter Code
                         </button>
                         <!-- </fieldset> -->
                     </div>
-                    <div id="edit-buttons" data-mega-step="15">
+                    <div id="edit-buttons" data-mega-step="150">
                         <button id="copy-notes" class="edit-button">C</button>
                         <button id="paste-notes" class="edit-button">V</button>
                     </div>
@@ -184,14 +186,14 @@
                         <select
                             name="presets"
                             id="presets-select"
-                            data-mega-step="20"
+                            data-mega-step="200"
                         >
                             <option value="">Select a Preset</option>
                         </select>
                     </div>
                     <div class="tool-panel">
                         <!-- <label for="lightshow">lightshow</label> -->
-                        <select name="quantize-frequency" id="quantize-frequency" data-mega-step="12">
+                        <select name="quantize-frequency" id="quantize-frequency" data-mega-step="120">
                             <option value="-1">Quantize precision</option>
                             <option value="4">1/4 note</option>
                             <option value="8">8th note</option>
@@ -200,7 +202,7 @@
                     </div>
                     <div class="tool-panel">
                         <!-- <label for="lightshow">lightshow</label> -->
-                        <select name="lightshow" id="lightshow" data-mega-step="12">
+                        <select name="lightshow" id="lightshow" data-mega-step="125">
                             <option value="-1">Lightshow</option>
                             <option value="-1">None</option>
                             <option value="4">Every 1/4</option>
@@ -321,13 +323,17 @@
                 ></audio>
             </section>
         </div>
-        <script src="./drum-machine.js"></script>
+        <script src="./drum-machine.js" type="module"></script>
         <script src="./mega-walkthrough/mega-walkthrough.js"></script>
         <script>
             megaWalkthrough.setCopy([
                 [
                     "Help",
                     "Select (?) icon for help walk-through. <br><br> Select [?] icon for keyboard commands.",
+                ],
+                [
+                    "Keyboard Help",
+                    "Select [?] icon for keyboard commands. <br><br> Select (?) icon for help walk-through.",
                 ],
                 [
                     "Drum Pad",
