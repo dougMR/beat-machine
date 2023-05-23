@@ -19,6 +19,8 @@
 
 Ideas to add:
 
+ - add volume control
+
  - when you switch sample library, check if samples being removed are used in track.  Then prompt -> Keep on samples used in track?
 
  - should scrubbing over notes play them? 
@@ -44,6 +46,21 @@ Ideas to add:
 
 
 */
+
+
+/*
+
+d888888b d8b   db d888888b d888888b   db    db  .d8b.  d8888b. d888888b  .d8b.  d8888b. db      d88888b .d8888. 
+  `88'   888o  88   `88'   `~~88~~'   88    88 d8' `8b 88  `8D   `88'   d8' `8b 88  `8D 88      88'     88'  YP 
+   88    88V8o 88    88       88      Y8    8P 88ooo88 88oobY'    88    88ooo88 88oooY' 88      88ooooo `8bo.   
+   88    88 V8o88    88       88      `8b  d8' 88~~~88 88`8b      88    88~~~88 88~~~b. 88      88~~~~~   `Y8b. 
+  .88.   88  V888   .88.      88       `8bd8'  88   88 88 `88.   .88.   88   88 88   8D 88booo. 88.     db   8D 
+Y888888P VP   V8P Y888888P    YP         YP    YP   YP 88   YD Y888888P YP   YP Y8888P' Y88888P Y88888P `8888Y' 
+                                                                                                                
+                                                                                                                
+
+*/
+
 
 /*
   note = a sound on the timeline (track)
@@ -606,7 +623,7 @@ db   8D `8b  d8' 88  V888 88. ~8~    d8'         88    88 `88. 88   88 Y8b  d8 8
     };
 
     const buildSongFromSongCode = (songJson) => {
-        // console.log("code", code);
+        console.log("songJson", songJson);
         // songJson is an array of notes
         const songCodeObj = JSON.parse(songJson);
 
@@ -627,12 +644,16 @@ db   8D `8b  d8' 88  V888 88. ~8~    d8'         88    88 `88. 88   88 Y8b  d8 8
             const audio = document.querySelector(
                 `audio[src="${note.audioSrc}"]`
             );
-            if (!note.fraction) {
+            // assumes we have one or the other
+            if (!note.fraction && note.ms) {
                 note.fraction = note.ms / track.duration;
+            } 
+            if (!note.ms && note.fraction){
+                note.ms = note.fraction * track.duration;
             }
-            // console.log("note.fraction", note.fraction);
+            console.log("note.fraction", note.fraction);
             const fraction = note.fraction;
-            // console.log("ms", ms);
+            console.log("note.ms", note.ms);
             programNote(audio, note.ms);
         }
         // Activate samples in song
@@ -847,7 +868,7 @@ db   8D `8b  d8' 88  V888 88. ~8~    d8'         88    88 `88. 88   88 Y8b  d8 8
         track.clipboardNotes.sort((A, B) => {
             return A.fraction - B.fraction;
         });
-
+// console.log(track.clipboardNotes)
         const leftmostNote = track.clipboardNotes[0];
         const leftmostTotalFraction = leftmostNote.fraction;
         const playheadFraction = getPlayheadX() / track.trackWidth;
@@ -1443,6 +1464,7 @@ db   8D `8b  d8' 88  V888 88. ~8~    d8'         88    88 `88. 88   88 Y8b  d8 8
     });
 
     window.addEventListener("keydown", (event) => {
+        console.log(event.code);
         if (keysDown.includes(event.code)) {
             // key is already down
             return;
@@ -1482,10 +1504,10 @@ db   8D `8b  d8' 88  V888 88. ~8~    d8'         88    88 `88. 88   88 Y8b  d8 8
             //     // '?'
             //     // help
             //     toggleHelp();
-        } else if (event.code === "KeyC") {
+        } else if (event.code === "KeyC" && !event.metaKey) {
             // Copy selected notes
             copySelectedNotesToClipboard();
-        } else if (event.code === "KeyV") {
+        } else if (event.code === "KeyV" && !event.metaKey) {
             // Paste notes from clipboard into track
             pasteNotesFromClipboard();
         } else if (event.code === "Digit0" || event.code === "Numpad0") {
