@@ -397,7 +397,7 @@ button.on {
 }
 
 #playhead-gutter {
-    height: 24px;
+    height: 18px;
     /* background-color: yellow; */
     background: linear-gradient(
         180deg,

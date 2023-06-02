@@ -143,6 +143,17 @@
                 <div id="track-tools">
                     <!-- <div>&nbsp;</div> -->
                     <div class="tool-panel">
+
+                        <div class="tool-panel">
+                            <select
+                                name="presets"
+                                id="presets-select"
+                                data-mega-step="20"
+                            >
+                                <option value="">Select a Preset</option>
+                            </select>
+                        </div>
+
                         <select name="library" id="library-select" data-mega-step="10">
                             <option value="">sample library</option>
                         </select>
@@ -179,15 +190,6 @@
                     <div id="edit-buttons" data-mega-step="15">
                         <button id="copy-notes" class="edit-button">C</button>
                         <button id="paste-notes" class="edit-button">V</button>
-                    </div>
-                    <div class="tool-panel">
-                        <select
-                            name="presets"
-                            id="presets-select"
-                            data-mega-step="20"
-                        >
-                            <option value="">Select a Preset</option>
-                        </select>
                     </div>
                     <div class="tool-panel">
                         <!-- <label for="lightshow">lightshow</label> -->
@@ -256,7 +258,7 @@
                 ></audio>
             </section>
             <audio id="tick" src="./sounds/metronone-tick.wav"></audio>
-            <section class="sample-library" data-lib="joe's">
+            <section class="sample-library" data-lib="Joe’s">
                 <audio
                     data-sample="Snare Short"
                     src="./sounds/joe-drums/Snare_Short.m4a"
