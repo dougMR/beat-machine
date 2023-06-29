@@ -5,8 +5,6 @@ track.clipboardNotes = [];
 // import {song} from "./module-song.js";
 // song.sayHello();
 // import { someVar, setSomeVar } from "./module-song.js";
-SongManager.setSomeVar(5);
-console.log("someVar: ", SongManager.someVar);
 
 /*
 
@@ -125,23 +123,23 @@ const megaDrumMachine = (() => {
     // -------------------------------
     const setTempo = (bpm) => {
         console.log("setTempo()", bpm);
-        console.log('SM.bpm:',SongManager.bpm);
+        // console.log('SM.getBpm():',SongManager.getBpm());
         SongManager.setTempo(bpm);
-        console.log('SM.bpm:',SongManager.bpm);
+        // console.log('SM.getBpm():',SongManager.getBpm());
         positionBeatIcons();
         positionPlayheadByElapsed();
     };
 
     const setMeasures = (numMeasures) => {
-        console.log("setMeasures()", numMeasures);
+        // console.log("setMeasures()", numMeasures);
         SongManager.setMeasures(numMeasures);
 
-        console.log("songmanager.measures", SongManager.measures);
-        console.log('songmanager.bpm',SongManager.bpm);
+        // console.log("SongManager.getMeasures()", SongManager.getMeasures());
+        // console.log('songmanager.bpm',SongManager.getBpm());
 
-        document.getElementById("measures-slider").value = SongManager.measures;
+        document.getElementById("measures-slider").value = SongManager.getMeasures();
         document.querySelector(".info.measure span.value").innerHTML =
-            SongManager.measures;
+            SongManager.getMeasures();
         positionBeatIcons();
         positionPlayheadByElapsed();
     };
@@ -170,11 +168,11 @@ const megaDrumMachine = (() => {
         // quantizePrecision 4 = quarternote, 8 = 8thnote ect...
         let msFrequency;
         if (quantizePrecision === 4) {
-            msFrequency = SongManager.msPerBeat;
+            msFrequency = SongManager.getMsPerBeat();
         } else if (quantizePrecision === 8) {
-            msFrequency = SongManager.msPer8th;
+            msFrequency = SongManager.getMsPer8th();
         } else if (quantizePrecision === 16) {
-            msFrequency = SongManager.msPer16th;
+            msFrequency = SongManager.getMsPer16th();
         }
 
         // get Note's MS
@@ -210,6 +208,7 @@ const megaDrumMachine = (() => {
     };
 
     const toggleQuantize = () => {
+        console.log('toggleQuantize()');
         quantizeOn = !quantizeOn;
         document.getElementById("quantize-light").classList.toggle("on");
         positionBeatIcons();
@@ -243,8 +242,8 @@ const megaDrumMachine = (() => {
             });
         }
         const songCode = {
-            bpm: SongManager.bpm,
-            measures: SongManager.measures,
+            bpm: SongManager.getBpm(),
+            measures: SongManager.getMeasures(),
             notes,
         };
         // console.log("notes", notes);
@@ -291,19 +290,19 @@ const megaDrumMachine = (() => {
         clearTrack(true);
         // set tempo
         setTempo(songCodeObj.bpm);
-        document.getElementById("tempo-slider").value = SongManager.bpm;
+        document.getElementById("tempo-slider").value = SongManager.getBpm();
         document.querySelector(".info.tempo span.value").innerHTML =
-            SongManager.bpm;
+            SongManager.getBpm();
         // set measures
         setMeasures(Number(songCodeObj.measures));
         // document.getElementById("measures-slider").value =
-        //     SongManager.measures;
+        //     SongManager.getMeasures();
         // document.querySelector(".info.measure span.value").innerHTML =
-        //     SongManager.measures;
+        //     SongManager.getMeasures();
 
         // Program song notes
         for (const note of songCodeObj.notes) {
-            const audio = document.querySelector(
+            const audioEl = document.querySelector(
                 `audio[src="${note.audioSrc}"]`
             );
             if (!note.fraction && note.ms) {
@@ -316,15 +315,15 @@ const megaDrumMachine = (() => {
             }
             // console.log('songcodee note',note);
             // const fraction = note.fraction;
-            programNote(audio, note.ms);
+            programNote(audioEl, note.ms);
         }
         // Activate samples used in song, deactivate others
         SamplesManager.clearSampleKeys();
-        for (const audio of SamplesManager.allSamples) {
-            if (SongManager.checkSampleInSong(audio)) {
-                // console.log(audio.dataset.sample, "is in song");
+        for (const audioEl of SamplesManager.allSamples) {
+            if (SongManager.checkSampleInSong(audioEl)) {
+                // console.log(audioEl.dataset.sample, "is in song");
                 // Activate this sample if not active
-                SamplesManager.activateSample(audio);
+                SamplesManager.activateSample(audioEl);
             }
         }
         // Position beat Icons
@@ -395,7 +394,7 @@ const megaDrumMachine = (() => {
         const measure = Math.floor(currentBeat / 4);
         document.getElementById("counter").innerHTML = `measure ${measure}
                             beat ${currentBeat % 4}
-                            ms ${Math.round(elapsed % SongManager.msPerBeat)
+                            ms ${Math.round(elapsed % SongManager.getMsPerBeat())
                                 .toString()
                                 .padStart(4, "0")}
                              &nbsp;fps ${currentFPS}`;
@@ -499,18 +498,18 @@ const megaDrumMachine = (() => {
         SongManager.deselectBeatIcons();
     };
 
-    const programNote = (audio, ms) => {
+    const programNote = (audioEl, ms) => {
         // Create a note object and add it to song array
         // Also create quantized note and add it to songQuantized
 
         let beatIcon = null;
-        if (audio.id != "tick") {
+        if (audioEl.id != "tick") {
             beatIcon = makeBeatIcon();
         }
         // if (!song[measure]) song[measure] = [];
         // if (!song[measure][beat]) song[measure][beat] = [];
         const note = {
-            audio,
+            audio:audioEl,
             beatIcon,
             ms,
             fraction: ms / SongManager.track.duration,
@@ -748,7 +747,7 @@ const megaDrumMachine = (() => {
         // check for new beat
         let playedNote = false;
         const lastBeat = currentBeat;
-        currentBeat = Math.floor(elapsed / SongManager.msPerBeat);
+        currentBeat = Math.floor(elapsed / SongManager.getMsPerBeat());
 
         // check for 1/4 note
         if (currentBeat != lastBeat || elapsed === 0) {
@@ -774,7 +773,7 @@ const megaDrumMachine = (() => {
             // in same 1/4 note as last time
             // check for 8th note
             const last8th = current8th;
-            current8th = Math.floor(elapsed / SongManager.msPer8th);
+            current8th = Math.floor(elapsed / SongManager.getMsPer8th());
             if (!isRecording && last8th !== current8th) {
                 if (lightFrequency === 8 || lightFrequency === 16) {
                     randomBackgroundColor();
@@ -788,7 +787,7 @@ const megaDrumMachine = (() => {
             } else {
                 // check for 16th note
                 const last16th = current16th;
-                current16th = Math.floor(elapsed / SongManager.msPer16th);
+                current16th = Math.floor(elapsed / SongManager.getMsPer16th());
 
                 if (!isRecording && last16th !== current16th) {
                     if (lightFrequency === 16) {
@@ -843,19 +842,19 @@ db   8D 88   88 88  88  88 88      88booo. 88.     db   8D
             `#keys .key[data-key="${event.code}"]`
         );
         if (!keyEl) return;
-        const audio = document.querySelector(
+        const audioEl = document.querySelector(
             `audio[data-id="${keyEl.dataset.id}"]`
         );
-        if (audio) {
+        if (audioEl) {
             // If recording or editing, record note
             if (isRecording || isEditing) {
-                programNote(audio, elapsed);
+                programNote(audioEl, elapsed);
             }
 
             // play note
             if (!isRecording) {
                 // if recording, the note will get played by playhead movement
-                SamplesManager.playSound(audio);
+                SamplesManager.playSound(audioEl);
                 keyEl.classList.add("playing");
             }
         }
@@ -920,10 +919,10 @@ db   8D 88   88 88  88  88 88      88booo. 88.     db   8D
         checkBoxes.innerHTML = "";
         let audioNum = 0;
         let libName = "";
-        SamplesManager.allSamples.forEach((audio) => {
+        SamplesManager.allSamples.forEach((audioEl) => {
             // make Library label
-            if (audio.parentElement.dataset.lib !== libName) {
-                libName = audio.parentNode.dataset.lib;
+            if (audioEl.parentElement.dataset.lib !== libName) {
+                libName = audioEl.parentNode.dataset.lib;
                 const libTitle = document.createElement("div");
                 libTitle.classList.add("library-title");
                 libTitle.innerHTML = `<b>${libName}</b>`;
@@ -940,16 +939,16 @@ db   8D 88   88 88  88  88 88      88booo. 88.     db   8D
             const sampleId = "sample-" + audioNum;
             const sampleLabel = document.createElement("label");
             sampleLabel.setAttribute("for", sampleId);
-            sampleLabel.innerHTML = audio.dataset.sample;
+            sampleLabel.innerHTML = audioEl.dataset.sample;
 
             // make Sample checkbox
             const sampleCheckbox = document.createElement("input");
             sampleCheckbox.setAttribute("type", "checkbox");
             sampleCheckbox.id = sampleId;
-            sampleCheckbox.setAttribute("value", audio.dataset.sample);
+            sampleCheckbox.setAttribute("value", audioEl.dataset.sample);
             sampleCheckbox.setAttribute("name", sampleId);
-            sampleCheckbox.setAttribute("data-id", audio.dataset.id);
-            sampleCheckbox.innerHTML = audio.dataset.sample;
+            sampleCheckbox.setAttribute("data-id", audioEl.dataset.id);
+            sampleCheckbox.innerHTML = audioEl.dataset.sample;
 
             // Checkbox Listener
             sampleCheckbox.addEventListener("change", (event) => {
@@ -999,7 +998,7 @@ db   8D 88   88 88  88  88 88      88booo. 88.     db   8D
             sampleLi.append(sampleCheckbox);
             sampleLi.append(sampleLabel);
             sampleLi.addEventListener("pointerdown", (event) => {
-                SamplesManager.playSound(audio);
+                SamplesManager.playSound(audioEl);
             });
             checkBoxes.append(sampleLi);
             audioNum++;
@@ -1080,7 +1079,7 @@ db   8D 88   88 88  88  88 88      88booo. 88.     db   8D
     tempoSlider.addEventListener("input", (event) => {
         // change tempo number display
         const valueDisplay = document.querySelector(".info.tempo .value");
-        const oldvalue = SongManager.bpm;
+        const oldvalue = SongManager.getBpm();
         const value = Number(event.target.value);
         valueDisplay.innerHTML = value;
         if (Math.abs(value - oldvalue) > 20) {
@@ -1102,6 +1101,7 @@ db   8D 88   88 88  88  88 88      88booo. 88.     db   8D
     measureSlider.addEventListener("input", (event) => {
         const value = event.target.value;
         document.querySelector(".info.measure .value").innerHTML = value;
+        console.log('document.querySelector(".info.measure .value").innerHTML',document.querySelector(".info.measure .value").innerHTML);
         setMeasures(value);
     });
 
@@ -1515,7 +1515,7 @@ db   8D 88   88 88  88  88 88      88booo. 88.     db   8D
 
     buildPresetPulldown();
     buildLibraryPulldown();
-    SamplesManager.setAudioIds();
+    SamplesManager.setAudioElementsIds();
     SamplesManager.loadSamplesLibrary("standard");
     SongManager.buildTrack();
     buildSampleSelector();

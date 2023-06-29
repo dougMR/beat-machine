@@ -13,7 +13,7 @@ db   8D 88   88 88  88  88 88      88booo. 88.     db   8D
 
 // 'Samples' refer to audio elements
 
-// itit variables
+// init variables
 
 // *** Should a module directly query the DOM?
 const allSamples = Array.from(
@@ -24,6 +24,8 @@ const keysEl = document.querySelector("#keys");
 const maxSamples = 11;
 const activeSamples = [];
 const sampleCopies = [];
+
+// The middle keyboard row is for playing samples
 const triggerKeys = [
     {
         code: "KeyA",
@@ -72,6 +74,7 @@ const triggerKeys = [
 ];
 
 const dupeSample = (audioEl) => {
+    // duplicate the audio element
     const id = parseInt(audioEl.dataset.id);
     const newAudio = new Audio(audioEl.src);
     if (!sampleCopies[id]) {
@@ -105,7 +108,6 @@ const playSampleCopy = (audioEl) => {
         const newSample = dupeSample(audioEl);
         const tempListener = (e) => {
             e.target.play();
-            // console.log("tempListener", tempListener);
             e.target.removeEventListener("canplaythrough", tempListener);
         };
         newSample.addEventListener("canplaythrough", tempListener);
@@ -115,7 +117,7 @@ const playSampleCopy = (audioEl) => {
 // -------------------------------
 // Initial build of sample-selector view
 // -------------------------------
-const setAudioIds = () => {
+const setAudioElementsIds = () => {
     // const audios = document.querySelectorAll(".sample-library audio ");
     let idNum = 0;
     allSamples.forEach((audioEl) => {
@@ -135,14 +137,14 @@ const getKeyFromSample = (audioEl) => {
 //
 // =======================
 
-const playSound = (audio) => {
-    // if (!(audio.currentTime === 0 || audio.ended)) {
+const playSound = (audioEl) => {
+    // if (!(audioEl.currentTime === 0 || audioEl.ended)) {
     //     // console.log("overlap");
-    //     sample is playing, play a copy
-    //     playSampleCopy(audio);
+    //     sample is already playing, play a copy
+    //     playSampleCopy(audioEl);
     // } else {
-    audio.currentTime = 0;
-    audio.play();
+    audioEl.currentTime = 0;
+    audioEl.play();
     // }
 };
 
@@ -312,7 +314,7 @@ const SamplesManager = {
     clearSampleKeys,
     playSound,
     getKeyFromSample,
-    setAudioIds,
+    setAudioElementsIds,
     // playSampleCopy,
     // dupeSample
     setCheckedSamplesByActiveSamples

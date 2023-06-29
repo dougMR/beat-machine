@@ -1,0 +1,12 @@
+  const playheadEl = document.getElementById("playhead");
+    const trackEl = document.getElementById("track");
+
+    const beatIcons = document.getElementById("beat-icons");
+    const tempoSlider = document.getElementById("tempo-slider");
+    const measureSlider = document.getElementById("measures-slider");
+
+    const beatLight = document.getElementById("beat-light");
+    const clearLight = document.getElementById("clear-light");
+    const recLight = document.getElementById("rec-light");
+
+    

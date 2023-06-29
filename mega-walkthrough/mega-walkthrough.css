@@ -5,7 +5,7 @@
     background-color: hsl(195, 53%, 79%);
     font-family: monospace;
     width: 20vw;
-    min-width: 290px;
+    min-width: 320px;
     --pointer-offset: -8px;
     --pointer-side-dist: 6px;
     transition: top 2s;

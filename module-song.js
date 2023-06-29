@@ -1,32 +1,7 @@
+// We don't like importing SamplesManager here, because it's also imported into main drum-machine.js
+// Make more separation of functionality?
 import { SamplesManager } from "./module-samples.js";
 // Song Module
-
-// const helloFromSongModule = () => {
-//     console.log("hello from song module");
-// };
-
-// const song = {
-//     hello: helloFromSongModule,
-// };
-
-let someVar = 0;
-const setSomeVar = (value) => {
-    console.log('setSomeVar()',value);
-	someVar = value;
-    console.log("SM.someVar",someVar);
-}
-// export { someVar, setSomeVar, song };
-
-// export { song };
-
-// const sayHello = () => {
-//     console.log("hello from module-song.js");
-// }
-// const song = {
-//     sayHello
-// }
-
-// export {song};
 
 /* 
 
@@ -57,21 +32,21 @@ const track = {};
 track.marquis = trackEl.querySelector("#marquis");
 track.clipboardNotes = [];
 
-
 const selectBeatIcon = (beatIcon) => {
-    // console.log('selectBeatIcon', beatIcon);
+    // Show it selected
     if (!beatIcon.classList.contains("selected")) {
         beatIcon.classList.add("selected");
         if (!isPlaying) {
             SamplesManager.playSound(beatIcon.note.audio);
         }
-
         document.getElementById("copy-notes").classList.add("on");
     }
 };
+
 const deselectBeatIcon = (beatIcon) => {
     beatIcon.classList.remove("selected");
 };
+
 const deselectBeatIcons = () => {
     // deselect all beat icons
     let beatIcons = Array.from(
@@ -81,6 +56,7 @@ const deselectBeatIcons = () => {
         deselectBeatIcon(beatIcon);
     }
 };
+
 track.toggleSelectBeat = (beatIcon) => {
     if (beatIcon.classList.contains("selected")) {
         deselectBeatIcon(beatIcon);
@@ -88,6 +64,7 @@ track.toggleSelectBeat = (beatIcon) => {
         selectBeatIcon(beatIcon);
     }
 };
+
 track.marquisBeats = (start, end) => {
     const minX = Math.min(start.x, end.x),
         maxX = Math.max(start.x, end.x),
@@ -110,9 +87,9 @@ track.marquisBeats = (start, end) => {
         } else {
             deselectBeatIcon(beatIcon);
         }
-        // console.log("note", beatIcon.note);
     }
 };
+
 track.drawMarquis = (start, end) => {
     const minX = Math.min(start.x, end.x),
         maxX = Math.max(start.x, end.x),
@@ -123,7 +100,6 @@ track.drawMarquis = (start, end) => {
     track.marquis.style.top = minY + "px";
     track.marquis.style.width = maxX - minX + "px";
     track.marquis.style.height = maxY - minY + "px";
-    // console.log(maxX, ",", maxY);
 };
 
 const setTempo = (value) => {
@@ -138,18 +114,18 @@ const setTempo = (value) => {
 };
 
 const setMeasures = (value) => {
-    console.log('song.setMeasures()',value);
-    console.log('measures:',measures);
-    console.log(typeof value);
+    // console.log('song.setMeasures()',value);
+    // console.log('measures:',measures);
+    // console.log(typeof value);
     const ratio = measures / value;
-    console.log('ratio',ratio);
+    // console.log('ratio',ratio);
     recalculateNotesFractions(ratio);
     measures = value;
-    console.log('measures: ',measures);
+    // console.log('measures: ',measures);
     track.duration = msPerBeat * 4 * measures;
-    console.log('measures: ',measures);
+    // console.log('measures: ',measures);
     drawTrack();
-    console.log('measures: ',measures);
+    // console.log('measures: ',measures);
     // positionBeatIcons();
     // positionPlayheadByElapsed();
 };
@@ -229,7 +205,6 @@ const removeDuplicateNotes = (note) => {
     // remove it and add this one.
     const minMSdiff = 10;
     const dupes = findSampleInSong(note.audio);
-    // console.log('dupes.length',dupes.length);
     for (const dupe of dupes) {
         if (dupe !== note) {
             const msDiff = Math.abs(noteMS - getNoteMS(dupe));
@@ -248,8 +223,6 @@ const removeAllDuplicateNotes = () => {
         removeDuplicateNotes(note);
     }
 };
-
-
 
 const getNotesMSdifference = (note1, note2) => {
     const totalMS1 = track.duration + getNoteMS(note1);
@@ -279,6 +252,7 @@ const findSampleInSong = (audioEl) => {
 };
 
 const removeNotesFromSong = (notesAr) => {
+    console.log('removeNotesFromSong()');
     for (const note of notesAr) {
         removeNoteFromSong(note);
     }
@@ -333,14 +307,14 @@ const lockQuantized = () => {
     removeAllDuplicateNotes();
 };
 
-const SongManager = {
+export const SongManager = {
     song,
     songQuantized,
-    msPerBeat,
-    msPer8th,
-    msPer16th,
-    bpm,
-    measures,
+    getMsPerBeat: () => msPerBeat,
+    getMsPer8th: () => msPer8th,
+    getMsPer16th: () => msPer16th,
+    getBpm: () => bpm,
+    getMeasures: () => measures,
     track,
     // getAllNotesInSong,
     removeNoteFromSong,
@@ -359,8 +333,4 @@ const SongManager = {
     setMeasures,
     selectBeatIcon,
     deselectBeatIcons,
-    someVar,
-    setSomeVar
 };
-
-export {SongManager}
