@@ -80,7 +80,7 @@
                             class="light rect"
                             data-mega-step="6"
                         >
-                            Edit
+                            <p>Edit</p>
                         </div>
                     </div>
 
@@ -143,7 +143,6 @@
                 <div id="track-tools">
                     <!-- <div>&nbsp;</div> -->
                     <div class="tool-panel">
-
                         <div class="tool-panel">
                             <select
                                 name="presets"
@@ -154,7 +153,11 @@
                             </select>
                         </div>
 
-                        <select name="library" id="library-select" data-mega-step="10">
+                        <select
+                            name="library"
+                            id="library-select"
+                            data-mega-step="10"
+                        >
                             <option value="">sample library</option>
                         </select>
 
@@ -193,7 +196,11 @@
                     </div>
                     <div class="tool-panel">
                         <!-- <label for="lightshow">lightshow</label> -->
-                        <select name="quantize-frequency" id="quantize-frequency" data-mega-step="12">
+                        <select
+                            name="quantize-frequency"
+                            id="quantize-frequency"
+                            data-mega-step="12"
+                        >
                             <option value="-1">Quantize precision</option>
                             <option value="4">1/4 note</option>
                             <option value="8">8th note</option>
@@ -202,7 +209,11 @@
                     </div>
                     <div class="tool-panel">
                         <!-- <label for="lightshow">lightshow</label> -->
-                        <select name="lightshow" id="lightshow" data-mega-step="12">
+                        <select
+                            name="lightshow"
+                            id="lightshow"
+                            data-mega-step="12"
+                        >
                             <option value="-1">Lightshow</option>
                             <option value="-1">None</option>
                             <option value="4">Every 1/4</option>
@@ -327,7 +338,7 @@
         <script src="./mega-walkthrough/mega-walkthrough.js"></script>
         <script>
             megaWalkthrough.setCopy([
-            [
+                [
                     "Help",
                     "Select (?) icon for help walk-through. <br><br> Select [?] icon for keyboard commands.",
                 ],
@@ -343,7 +354,10 @@
                     "Record Light",
                     "Press 'R' to toggle recording.  Press sample keys while recording to add notes to the track.",
                 ],
-                ["Cut Light", "Press 'X' (or backspace) to remove selected notes."],
+                [
+                    "Cut Light",
+                    "Press 'X' (or backspace) to remove selected notes.",
+                ],
                 [
                     "Quantize Light",
                     "Press 'Q' to toggle quantize mode, snapping notes to the closest beat.",
@@ -373,12 +387,9 @@
                 ],
                 [
                     "Quantize Precision",
-                    "Set quantize granularity - closest fraction of a beat to snap to."
+                    "Set quantize granularity - closest fraction of a beat to snap to.",
                 ],
-                [
-                    "Lightshow",
-                    "Choose a lightshow to accompany your track.",
-                ],
+                ["Lightshow", "Choose a lightshow to accompany your track."],
                 ["Copy Track", "Copy the track's code to clipboard."],
                 [
                     "Build Track From Code",

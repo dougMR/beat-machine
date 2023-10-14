@@ -1,5 +1,25 @@
-import { SamplesManager } from "./module-samples.js";
-import { SongManager } from "./module-song.js";
+import { SamplesManager } from "./js/module-samples.js";
+import {
+    SongManager,
+    QuantizeManager,
+    getIsRecording,
+    setIsRecording,
+    getIsEditing,
+    setIsEditing,
+} from "./js/module-song.js";
+import { presetSongs } from "./js/module-preset-songs.js";
+import {
+    positionBeatIcon,
+    makeBeatIcon,
+    buildTrack,
+    redrawTrack,
+    track,
+    setDraggingIcons,
+    getDraggingIcons,
+    getXinTrack,
+    // getLastIconDragX,
+    setLastIconDragX
+} from "./js/module-trackGUI.js";
 
 track.clipboardNotes = [];
 // import {song} from "./module-song.js";
@@ -76,7 +96,6 @@ Y888888P VP   V8P Y888888P    YP         YP    YP   YP 88   YD Y888888P YP   YP 
 
 const megaDrumMachine = (() => {
     const fps = 60;
-    // const msPerFrame = 1000 / 60;
     const targetMSperFrame = 1000 / fps;
 
     let currentMeasure = 0;
@@ -87,25 +106,19 @@ const megaDrumMachine = (() => {
     let startTime = -1;
     let elapsed;
 
-    // let currentMS = 0;
+    // QuantizeManager.quantizeOn = false;
 
-    let quantizeOn = false;
-    let isRecording = false;
     let scrubbing = false;
-    let draggingIcons = false;
-    let lastIconDragX;
+    
     let draggingPlayhead = false;
-    let isEditing = false;
     let lightFrequency = -1;
-    let quantizePrecision = 4;
+    QuantizeManager.setQuantizePrecision(4);
 
     // -1 = none, 0 = 1/4 and all notes, 4 = 1/4, 8 = 1/8, 16 = 1/16
 
     const playheadEl = document.getElementById("playhead");
     const trackEl = document.getElementById("track");
 
-    // track.marquis = trackEl.querySelector("#marquis");
-    // track.clipboardNotes = [];
     const beatIcons = document.getElementById("beat-icons");
     const tempoSlider = document.getElementById("tempo-slider");
     const measureSlider = document.getElementById("measures-slider");
@@ -123,100 +136,25 @@ const megaDrumMachine = (() => {
     // -------------------------------
     const setTempo = (bpm) => {
         console.log("setTempo()", bpm);
-        // console.log('SM.getBpm():',SongManager.getBpm());
         SongManager.setTempo(bpm);
-        // console.log('SM.getBpm():',SongManager.getBpm());
-        positionBeatIcons();
+        SongManager.repositionBeatIcons();
         positionPlayheadByElapsed();
     };
 
     const setMeasures = (numMeasures) => {
         // console.log("setMeasures()", numMeasures);
         SongManager.setMeasures(numMeasures);
-
-        // console.log("SongManager.getMeasures()", SongManager.getMeasures());
-        // console.log('songmanager.bpm',SongManager.getBpm());
-
-        document.getElementById("measures-slider").value = SongManager.getMeasures();
+        document.getElementById("measures-slider").value =
+            SongManager.getMeasures();
         document.querySelector(".info.measure span.value").innerHTML =
             SongManager.getMeasures();
-        positionBeatIcons();
+        SongManager.repositionBeatIcons();
         positionPlayheadByElapsed();
     };
 
     // -------------------------------
     // Track Settings
     // -------------------------------
-
-    /*
-
-
-     .d88b.  db    db  .d8b.  d8b   db d888888b d888888b d88888D d88888b 
-    .8P  Y8. 88    88 d8' `8b 888o  88 `~~88~~'   `88'   YP  d8' 88'     
-    88    88 88    88 88ooo88 88V8o 88    88       88       d8'  88ooooo 
-    88    88 88    88 88~~~88 88 V8o88    88       88      d8'   88~~~~~ 
-    `8P  d8' 88b  d88 88   88 88  V888    88      .88.    d8' db 88.     
-     `Y88'Y8 ~Y8888P' YP   YP VP   V8P    YP    Y888888P d88888P Y88888P 
-                                                                                                                                 
-    */
-
-    const addNoteToSongQuantized = (note) => {
-        SongManager.songQuantized.push(note);
-    };
-
-    const quantizeNote = (note) => {
-        // quantizePrecision 4 = quarternote, 8 = 8thnote ect...
-        let msFrequency;
-        if (quantizePrecision === 4) {
-            msFrequency = SongManager.getMsPerBeat();
-        } else if (quantizePrecision === 8) {
-            msFrequency = SongManager.getMsPer8th();
-        } else if (quantizePrecision === 16) {
-            msFrequency = SongManager.getMsPer16th();
-        }
-
-        // get Note's MS
-        const noteMS = SongManager.getNoteMS(note);
-
-        let beatNum = Math.floor(noteMS / msFrequency);
-        const remainder = noteMS - beatNum * msFrequency;
-        const closest = Math.round(remainder / msFrequency);
-        beatNum += closest;
-        const totalBeats = SongManager.track.duration / msFrequency;
-        if (beatNum === totalBeats) {
-            beatNum = 0;
-        }
-        const quantizedNote = {
-            audio: note.audio,
-            beatIcon: note.beatIcon,
-            ms: beatNum * msFrequency,
-            fraction: beatNum * (msFrequency / SongManager.track.duration),
-        };
-        note.beatIcon.qNote = quantizedNote;
-        return quantizedNote;
-    };
-
-    const quantizeTrack = () => {
-        // re-quantize the track
-        SongManager.songQuantized.length = 0;
-        for (const note of SongManager.song) {
-            const quantizedNote = quantizeNote(note);
-            addNoteToSongQuantized(quantizedNote);
-            // note.beatIcon.qNote = quantizedNote;
-        }
-        if (quantizeOn) positionBeatIcons();
-    };
-
-    const toggleQuantize = () => {
-        console.log('toggleQuantize()');
-        quantizeOn = !quantizeOn;
-        document.getElementById("quantize-light").classList.toggle("on");
-        positionBeatIcons();
-    };
-
-    const quantizeSelectedNotes = () => {
-        // Quantize only the selected notes
-    };
 
     /*
 
@@ -237,7 +175,7 @@ const megaDrumMachine = (() => {
         const notes = [];
         for (const note of SongManager.song) {
             notes.push({
-                audioSrc: note.audio.getAttribute("src"),
+                audioSrc: note.audioEl.getAttribute("src"),
                 fraction: note.fraction,
             });
         }
@@ -295,10 +233,6 @@ const megaDrumMachine = (() => {
             SongManager.getBpm();
         // set measures
         setMeasures(Number(songCodeObj.measures));
-        // document.getElementById("measures-slider").value =
-        //     SongManager.getMeasures();
-        // document.querySelector(".info.measure span.value").innerHTML =
-        //     SongManager.getMeasures();
 
         // Program song notes
         for (const note of songCodeObj.notes) {
@@ -306,28 +240,24 @@ const megaDrumMachine = (() => {
                 `audio[src="${note.audioSrc}"]`
             );
             if (!note.fraction && note.ms) {
-                note.fraction = note.ms / SongManager.track.duration;
-                // console.log('track.duration',SongManager.track.duration);
+                note.fraction = note.ms / track.duration;
             } else if (!note.ms && note.fraction) {
-                note.ms = SongManager.track.duration * note.fraction;
+                note.ms = track.duration * note.fraction;
             } else {
                 // SOL
             }
-            // console.log('songcodee note',note);
-            // const fraction = note.fraction;
             programNote(audioEl, note.ms);
         }
         // Activate samples used in song, deactivate others
         SamplesManager.clearSampleKeys();
         for (const audioEl of SamplesManager.allSamples) {
             if (SongManager.checkSampleInSong(audioEl)) {
-                // console.log(audioEl.dataset.sample, "is in song");
                 // Activate this sample if not active
                 SamplesManager.activateSample(audioEl);
             }
         }
         // Position beat Icons
-        positionBeatIcons();
+        SongManager.repositionBeatIcons();
         // Play from beginning
         setPlayheadPosition(0);
         setElapsedFromPlayheadPosition();
@@ -353,24 +283,25 @@ const megaDrumMachine = (() => {
     };
 
     const positionPlayheadByElapsed = () => {
-        const pctPlayed = elapsed / SongManager.track.duration;
-        setPlayheadPosition(SongManager.track.trackWidth * pctPlayed);
+        const pctPlayed = elapsed / track.duration;
+        setPlayheadPosition(track.trackWidth * pctPlayed);
     };
 
     const checkAndPlayNotes = (f0, f1) => {
         // While track is playing
         // Check for notes between playhead's last position and current position
-        const songAr = quantizeOn
-            ? SongManager.songQuantized
+        // console.log('QuantizeManager.quantizeOn:',QuantizeManager.quantizeOn());
+        const songAr = QuantizeManager.getQuantizeOn()
+            ? QuantizeManager.songQuantized
             : SongManager.song;
         // Return true if 'note' is played, false if not
         let foundNote = false;
         songAr.forEach((note) => {
             if (note.fraction >= f0 && note.fraction < f1) {
                 // play it
-                SamplesManager.playSound(note.audio);
+                SamplesManager.playSound(note.audioEl);
                 // light up 'drumpad' .key for sample
-                const key = SamplesManager.getKeyFromSample(note.audio);
+                const key = SamplesManager.getKeyFromSample(note.audioEl);
 
                 if (key) {
                     const keyStyle = getComputedStyle(key);
@@ -379,7 +310,7 @@ const megaDrumMachine = (() => {
                     }
                 }
                 // light up beat icon for 'note'
-                if (!isRecording && note.beatIcon) {
+                if (!getIsRecording() && note.beatIcon) {
                     if (!note.beatIcon.classList.contains("selected")) {
                         note.beatIcon.classList.add("on");
                     }
@@ -394,7 +325,9 @@ const megaDrumMachine = (() => {
         const measure = Math.floor(currentBeat / 4);
         document.getElementById("counter").innerHTML = `measure ${measure}
                             beat ${currentBeat % 4}
-                            ms ${Math.round(elapsed % SongManager.getMsPerBeat())
+                            ms ${Math.round(
+                                elapsed % SongManager.getMsPerBeat()
+                            )
                                 .toString()
                                 .padStart(4, "0")}
                              &nbsp;fps ${currentFPS}`;
@@ -405,18 +338,18 @@ const megaDrumMachine = (() => {
     // =======================
     const startRecording = () => {
         recLight.classList.add("on");
-        isRecording = true;
+        setIsRecording(true);
         // quantizeTrack();
         startPlaying();
     };
     const stopRecording = () => {
         recLight.classList.remove("on");
-        isRecording = false;
+        setIsRecording(false);
         // quantizeTrack();
     };
     const toggleRecording = () => {
-        isRecording = !isRecording;
-        if (isRecording) {
+        setIsRecording(!getIsRecording());
+        if (getIsRecording()) {
             startRecording();
         } else {
             stopRecording();
@@ -424,9 +357,9 @@ const megaDrumMachine = (() => {
     };
 
     const toggleEdit = () => {
-        isEditing = !isEditing;
+        setIsEditing(!getIsEditing());
         document.getElementById("edit-light").classList.toggle("on");
-        if (!isEditing) {
+        if (!getIsEditing()) {
             // Deselect all icons
             SongManager.deselectBeatIcons();
         }
@@ -441,13 +374,13 @@ const megaDrumMachine = (() => {
             // None selected, copy them all
             selectedIcons = getAllIcons();
         }
-        SongManager.track.clipboardNotes.length = 0;
+        track.clipboardNotes.length = 0;
         for (const icon of selectedIcons) {
             const note = icon.note; //getNoteFromBeatIcon(icon);
             // console.log("note: ", note);
-            SongManager.track.clipboardNotes.push(note);
+            track.clipboardNotes.push(note);
         }
-        if (SongManager.track.clipboardNotes.length !== 0) {
+        if (track.clipboardNotes.length !== 0) {
             document.getElementById("paste-notes").classList.add("on");
         }
     };
@@ -456,21 +389,20 @@ const megaDrumMachine = (() => {
         // Paste notes from clipboard
 
         // sort left to right
-        SongManager.track.clipboardNotes.sort((A, B) => {
+        track.clipboardNotes.sort((A, B) => {
             return A.ms - B.ms;
         });
 
-        const leftmostNote = SongManager.track.clipboardNotes[0];
+        const leftmostNote = track.clipboardNotes[0];
         const leftmostTotalMS = leftmostNote.ms;
         const playheadMS = getElapsedFromPlayheadPosition();
 
-        for (const note of SongManager.track.clipboardNotes) {
+        for (const note of track.clipboardNotes) {
             const relativeMS = note.ms - leftmostTotalMS;
 
-            const noteMS =
-                (playheadMS + relativeMS) % SongManager.track.duration;
+            const noteMS = (playheadMS + relativeMS) % track.duration;
 
-            programNote(note.audio, noteMS);
+            programNote(note.audioEl, noteMS);
         }
         SongManager.deselectBeatIcons();
     };
@@ -479,21 +411,21 @@ const megaDrumMachine = (() => {
         // Paste notes from clipboard
 
         // sort left to right
-        SongManager.track.clipboardNotes.sort((A, B) => {
+        track.clipboardNotes.sort((A, B) => {
             return A.fraction - B.fraction;
         });
 
-        const leftmostNote = SongManager.track.clipboardNotes[0];
+        const leftmostNote = track.clipboardNotes[0];
         const leftmostTotalFraction = leftmostNote.fraction;
-        const playheadFraction = getPlayheadX() / SongManager.track.trackWidth;
+        const playheadFraction = getPlayheadX() / track.trackWidth;
 
-        for (const note of SongManager.track.clipboardNotes) {
+        for (const note of track.clipboardNotes) {
             const relativeFraction = note.fraction - leftmostTotalFraction;
 
             const noteFraction = (playheadFraction + relativeFraction) % 1;
-            const noteMS = noteFraction * SongManager.track.duration;
+            const noteMS = noteFraction * track.duration;
 
-            programNote(note.audio, noteMS);
+            programNote(note.audioEl, noteMS);
         }
         SongManager.deselectBeatIcons();
     };
@@ -509,18 +441,18 @@ const megaDrumMachine = (() => {
         // if (!song[measure]) song[measure] = [];
         // if (!song[measure][beat]) song[measure][beat] = [];
         const note = {
-            audio:audioEl,
+            audioEl,
             beatIcon,
             ms,
-            fraction: ms / SongManager.track.duration,
+            fraction: ms / track.duration,
         };
         beatIcon.note = note;
         SongManager.removeDuplicateNotes(note);
 
         // Add note to song
         SongManager.song.push(note);
-        const qNote = quantizeNote(note);
-        addNoteToSongQuantized(qNote);
+        const qNote = QuantizeManager.quantizeNote(note);
+        QuantizeManager.addNoteToSongQuantized(qNote);
 
         // beatIcon.qNote = qNote;
 
@@ -533,91 +465,12 @@ const megaDrumMachine = (() => {
     //    end MANAGE NOTES / SONG
     // --------------------------------
 
-    const getXinTrack = (pointerevent) => {
-        const clientX = pointerevent.clientX;
-        const trackX = trackEl.getBoundingClientRect().left;
-        return clientX - trackX;
-    };
+    
 
     const toggleHelp = () => {
         document.getElementById("keys-help-panel").classList.toggle("hidden");
         // Hey Doug! There's a universal hidden attribute for HTML elements
         // element.hidden = true / element.hidden = false / element.hidden = !element.hidden...
-    };
-
-    // =============================================
-    //   BEAT ICONS
-    // =============================================
-
-    const positionBeatIcon = (note) => {
-        // console.log("position beat icon note", note);
-        if (!note.beatIcon) return;
-
-        // x position
-        const x = SongManager.track.trackWidth * note.fraction;
-        // console.log('trackWIdth',SongManager.track.trackWidth);
-        // console.log('note.fraction',note.fraction);
-        // y position
-        const drumIndex = SamplesManager.activeSamples.indexOf(note.audio);
-        const y =
-            (drumIndex + 1) *
-            (trackEl.offsetHeight / (SamplesManager.activeSamples.length + 1));
-
-        if (y === 0) {
-            console.log("     beatIcon y = 0");
-            console.log(
-                "SamplesManager.activeSamples.length",
-                SamplesManager.activeSamples.length
-            );
-            console.log("audio.dataset.sample", note.audio.dataset.sample);
-            console.log("drumIndex", drumIndex);
-            console.log("trackEl.offsetHeight", trackEl.offsetHeight);
-            console.log(
-                "SamplesManager.activeSamples.length",
-                SamplesManager.activeSamples.length,
-                "\n\r "
-            );
-        }
-
-        note.beatIcon.style.left = x + "px";
-        note.beatIcon.style.top = y + "px";
-    };
-
-    const makeBeatIcon = () => {
-        const icon = document.createElement("div");
-        icon.classList.add("beat-icon");
-
-        icon.addEventListener("transitionend", (event) => {
-            if (event.target.classList.contains("on")) {
-                event.target.classList.remove("on");
-            }
-        });
-
-        icon.addEventListener("pointerdown", (event) => {
-            // Drag all selected icons
-            if (icon.classList.contains("selected")) {
-                draggingIcons = true;
-                lastIconDragX = getXinTrack(event);
-            }
-            event.stopPropagation();
-        });
-        icon.addEventListener("pointerup", (event) => {
-            if (isEditing || isRecording) {
-                SongManager.selectBeatIcon(icon);
-            }
-        });
-
-        beatIcons.appendChild(icon);
-        return icon;
-    };
-
-    const positionBeatIcons = () => {
-        const songAr = quantizeOn
-            ? SongManager.songQuantized
-            : SongManager.song;
-        for (const note of songAr) {
-            positionBeatIcon(note);
-        }
     };
 
     const selectAllIcons = () => {
@@ -642,7 +495,7 @@ const megaDrumMachine = (() => {
     };
     const getQuantizedNoteFromBeatIcon = (beatIcon) => {
         // or we can just set beatIcon.note when we create an icon
-        for (const note of SongManager.songQuantized) {
+        for (const note of QuantizeManager.songQuantized) {
             if (note.beatIcon === beatIcon) {
                 return note;
             }
@@ -654,12 +507,12 @@ const megaDrumMachine = (() => {
         // console.log(beatIcon);
         const note = beatIcon.note;
 
-        const pctPos = beatIcon.offsetLeft / SongManager.track.trackWidth;
-        const elapsed = pctPos * SongManager.track.duration;
+        const pctPos = beatIcon.offsetLeft / track.trackWidth;
+        const elapsed = pctPos * track.duration;
 
         // remove note from current place in song
         SongManager.removeNoteFromSong(note);
-        programNote(note.audio, elapsed);
+        programNote(note.audioEl, elapsed);
     };
 
     // =============================================
@@ -740,9 +593,9 @@ const megaDrumMachine = (() => {
         // }
         let restartingTrack = false;
         const lastMS = elapsed;
-        const lastFraction = lastMS / SongManager.track.duration;
+        const lastFraction = lastMS / track.duration;
         elapsed += stepTime;
-        const currentFraction = (elapsed / SongManager.track.duration) % 1;
+        const currentFraction = (elapsed / track.duration) % 1;
 
         // check for new beat
         let playedNote = false;
@@ -753,7 +606,7 @@ const megaDrumMachine = (() => {
         if (currentBeat != lastBeat || elapsed === 0) {
             // On New Beat!
 
-            if (isRecording) {
+            if (getIsRecording()) {
                 SamplesManager.playSound(document.getElementById("tick"));
             } else if (lightFrequency > 0) {
                 randomBackgroundColor();
@@ -761,10 +614,10 @@ const megaDrumMachine = (() => {
             showBeat();
 
             // have we played through the track and started over?
-            if (elapsed > SongManager.track.duration) {
+            if (elapsed > track.duration) {
                 // looping to beginning of track
                 restartingTrack = true;
-                elapsed -= SongManager.track.duration;
+                elapsed -= track.duration;
                 // console.log('\nrestarting track, elapsed:',elapsed,'\n')
                 // startTime = timestamp - elapsed;
                 currentBeat = 0;
@@ -774,7 +627,7 @@ const megaDrumMachine = (() => {
             // check for 8th note
             const last8th = current8th;
             current8th = Math.floor(elapsed / SongManager.getMsPer8th());
-            if (!isRecording && last8th !== current8th) {
+            if (!getIsRecording() && last8th !== current8th) {
                 if (lightFrequency === 8 || lightFrequency === 16) {
                     randomBackgroundColor();
                 }
@@ -789,7 +642,7 @@ const megaDrumMachine = (() => {
                 const last16th = current16th;
                 current16th = Math.floor(elapsed / SongManager.getMsPer16th());
 
-                if (!isRecording && last16th !== current16th) {
+                if (!getIsRecording() && last16th !== current16th) {
                     if (lightFrequency === 16) {
                         randomBackgroundColor();
                     }
@@ -801,7 +654,7 @@ const megaDrumMachine = (() => {
             // // end of last loop
             // // start of this loop
             // console.log("lastMS", lastMS);
-            // console.log("SongManager.track.duration", SongManager.track.duration);
+            // console.log("track.duration", track.duration);
             // console.log("elapsed", elapsed);
             const playedNote1 = checkAndPlayNotes(lastFraction, 1);
             const playedNote2 = checkAndPlayNotes(0, currentFraction);
@@ -810,7 +663,7 @@ const megaDrumMachine = (() => {
             // haven't played through track
             playedNote = checkAndPlayNotes(lastFraction, currentFraction);
         }
-        if (playedNote && !isRecording && lightFrequency === 0) {
+        if (playedNote && !getIsRecording() && lightFrequency === 0) {
             randomBackgroundColor();
         }
 
@@ -847,12 +700,12 @@ db   8D 88   88 88  88  88 88      88booo. 88.     db   8D
         );
         if (audioEl) {
             // If recording or editing, record note
-            if (isRecording || isEditing) {
+            if (getIsRecording() || getIsEditing()) {
                 programNote(audioEl, elapsed);
             }
 
             // play note
-            if (!isRecording) {
+            if (!getIsRecording()) {
                 // if recording, the note will get played by playhead movement
                 SamplesManager.playSound(audioEl);
                 keyEl.classList.add("playing");
@@ -894,15 +747,12 @@ db   8D 88   88 88  88  88 88      88booo. 88.     db   8D
             const clientX = event.clientX;
             const trackX = trackEl.getBoundingClientRect().left;
             let playheadX = clientX - trackX;
-            playheadX = Math.max(
-                Math.min(playheadX, SongManager.track.trackWidth),
-                0
-            );
+            playheadX = Math.max(Math.min(playheadX, track.trackWidth), 0);
 
             setPlayheadPosition(playheadX);
             setElapsedFromPlayheadPosition();
             // console.log(playheadX + "px");
-        } else if (draggingIcons) {
+        } else if (getDraggingIcons()) {
             // Drag Icons
             const newIconDragX = getXinTrack(event);
             const dragDistX = event.movementX; //newIconDragX - lastIconDragX; //
@@ -910,7 +760,7 @@ db   8D 88   88 88  88  88 88      88booo. 88.     db   8D
             for (const icon of selectedIcons) {
                 icon.style.left = `${icon.offsetLeft + dragDistX}px`;
             }
-            lastIconDragX = newIconDragX;
+            setLastIconDragX(newIconDragX);
         }
     };
 
@@ -1101,12 +951,16 @@ db   8D 88   88 88  88  88 88      88booo. 88.     db   8D
     measureSlider.addEventListener("input", (event) => {
         const value = event.target.value;
         document.querySelector(".info.measure .value").innerHTML = value;
-        console.log('document.querySelector(".info.measure .value").innerHTML',document.querySelector(".info.measure .value").innerHTML);
+        console.log(
+            'document.querySelector(".info.measure .value").innerHTML',
+            document.querySelector(".info.measure .value").innerHTML
+        );
         setMeasures(value);
     });
 
     window.addEventListener("keydown", (event) => {
-        console.log("key.code", event.code);
+        // console.log("key.code", event.code);
+        // KeyboardEvent.code assumes QWERTY and ignores variations of alternate layouts
         if (keysDown.includes(event.code)) {
             // key is already down
             return;
@@ -1124,12 +978,12 @@ db   8D 88   88 88  88  88 88      88booo. 88.     db   8D
         } else if (event.code === "KeyQ") {
             // 'Q'
             // quantize
-            toggleQuantize();
+            QuantizeManager.toggleQuantize();
         } else if (keysDown.includes("KeyQ")) {
             if (event.code === "KeyL") {
                 // 'Q' and 'L'
                 // lock quantized
-                SongManager.lockQuantized();
+                QuantizeManager.lockQuantized();
             }
         } else if (event.code === "Space") {
             // Spacebar
@@ -1188,8 +1042,8 @@ db   8D 88   88 88  88  88 88      88booo. 88.     db   8D
     };
 
     trackEl.addEventListener("pointerdown", (event) => {
-        if (draggingPlayhead || !isEditing) return;
-        SongManager.track.pointerdown = true;
+        if (draggingPlayhead || !getIsEditing()) return;
+        track.pointerdown = true;
         // Get the bounding rectangle of target (trackEl)
         const rect = event.currentTarget.getBoundingClientRect();
 
@@ -1197,9 +1051,9 @@ db   8D 88   88 88  88  88 88      88booo. 88.     db   8D
         const x = event.clientX - rect.left;
         const y = event.clientY - rect.top;
 
-        SongManager.track.startXY = { x, y };
-        SongManager.track.marquis.classList.add("on");
-        SongManager.track.drawMarquis({ x, y }, { x, y });
+        track.startXY = { x, y };
+        track.marquis.classList.add("on");
+        track.drawMarquis({ x, y }, { x, y });
         if (trackEl.setPointerCapture) {
             // track mousemove outside of element (and outside of window)
             trackEl.setPointerCapture(event.pointerId);
@@ -1207,9 +1061,9 @@ db   8D 88   88 88  88  88 88      88booo. 88.     db   8D
     });
     document.addEventListener("pointerup", (event) => {
         // console.log("click track");
-        if (!SongManager.track.marquis.classList.contains("on")) return;
-        SongManager.track.pointerdown = false;
-        SongManager.track.marquis.classList.remove("on");
+        if (!track.marquis.classList.contains("on")) return;
+        track.pointerdown = false;
+        track.marquis.classList.remove("on");
 
         // Get the bounding rectangle of target
         // const rect = event.currentTarget.getBoundingClientRect();
@@ -1219,7 +1073,7 @@ db   8D 88   88 88  88  88 88      88booo. 88.     db   8D
         const x = event.clientX - rect.left;
         const y = event.clientY - rect.top;
 
-        SongManager.track.marquisBeats(SongManager.track.startXY, { x, y });
+        track.marquisBeats(track.startXY, { x, y });
 
         // remove marquis
         if (trackEl.releasePointerCapture) {
@@ -1228,8 +1082,8 @@ db   8D 88   88 88  88  88 88      88booo. 88.     db   8D
     });
 
     trackEl.addEventListener("pointermove", (event) => {
-        // console.log(SongManager.track.pointerdown);
-        if (SongManager.track.pointerdown) {
+        // console.log(track.pointerdown);
+        if (track.pointerdown) {
             // Get the bounding rectangle of target
             const rect = event.currentTarget.getBoundingClientRect();
 
@@ -1246,8 +1100,8 @@ db   8D 88   88 88  88  88 88      88booo. 88.     db   8D
             // console.log('y',y);
 
             // draw marquis
-            SongManager.track.drawMarquis(SongManager.track.startXY, { x, y });
-            SongManager.track.marquisBeats(SongManager.track.startXY, { x, y });
+            track.drawMarquis(track.startXY, { x, y });
+            track.marquisBeats(track.startXY, { x, y });
         }
     });
 
@@ -1264,8 +1118,8 @@ db   8D 88   88 88  88  88 88      88booo. 88.     db   8D
     };
 
     const getElapsedFromPlayheadPosition = () => {
-        const pctPos = getPlayheadX() / SongManager.track.trackWidth;
-        return pctPos * SongManager.track.duration;
+        const pctPos = getPlayheadX() / track.trackWidth;
+        return pctPos * track.duration;
     };
 
     const setElapsedFromPlayheadPosition = () => {
@@ -1292,10 +1146,7 @@ db   8D 88   88 88  88  88 88      88booo. 88.     db   8D
             const clientX = event.clientX;
             const trackX = trackEl.getBoundingClientRect().left;
             let playheadX = clientX - trackX;
-            playheadX = Math.max(
-                Math.min(playheadX, SongManager.track.trackWidth),
-                0
-            );
+            playheadX = Math.max(Math.min(playheadX, track.trackWidth), 0);
 
             setPlayheadPosition(playheadX);
             setElapsedFromPlayheadPosition();
@@ -1306,7 +1157,7 @@ db   8D 88   88 88  88  88 88      88booo. 88.     db   8D
         // console.log("Release Playhead");
 
         draggingPlayhead = false;
-        if (draggingIcons) {
+        if (getDraggingIcons()) {
             // reset notes of selected icons
             const selectedIcons = getSelectedIcons();
             // console.log('selectedIcons',selectedIcons)
@@ -1315,7 +1166,7 @@ db   8D 88   88 88  88  88 88      88booo. 88.     db   8D
                 positionNoteFromIcon(icon);
             }
 
-            draggingIcons = false;
+            setDraggingIcons(false);
         }
     });
 
@@ -1402,7 +1253,8 @@ db   8D 88   88 88  88  88 88      88booo. 88.     db   8D
     };
 
     window.addEventListener("resize", (event) => {
-        SongManager.redrawTrack();
+        redrawTrack();
+        positionPlayheadByElapsed();
     });
 
     document
@@ -1432,8 +1284,13 @@ db   8D 88   88 88  88  88 88      88booo. 88.     db   8D
     document
         .getElementById("quantize-frequency")
         .addEventListener("change", (event) => {
-            quantizePrecision = parseInt(event.currentTarget.value);
-            quantizeTrack();
+            console.log("quantize frequency")
+            // console.log("QuantizeManager.quantizePrecision: ",QuantizeManager.quantizePrecision) 
+            QuantizeManager.setQuantizePrecision(parseInt(
+                event.currentTarget.value
+            ))
+            // console.log("QuantizeManager.quantizePrecision: ",QuantizeManager.quantizePrecision)
+            QuantizeManager.quantizeTrack();
             document.activeElement.blur();
         });
 
@@ -1470,36 +1327,6 @@ db   8D 88   88 88  88  88 88      88booo. 88.     db   8D
             document.activeElement.blur();
         });
 
-    //
-    // PRESETS
-    //
-    /*
-
-    d8888b. d8888b. d88888b .d8888. d88888b d888888b   d888888b d8888b.  .d8b.   .o88b. db   dD .d8888. 
-    88  `8D 88  `8D 88'     88'  YP 88'     `~~88~~'   `~~88~~' 88  `8D d8' `8b d8P  Y8 88 ,8P' 88'  YP 
-    88oodD' 88oobY' 88ooooo `8bo.   88ooooo    88         88    88oobY' 88ooo88 8P      88,8P   `8bo.   
-    88~~~   88`8b   88~~~~~   `Y8b. 88~~~~~    88         88    88`8b   88~~~88 8b      88`8b     `Y8b. 
-    88      88 `88. 88.     db   8D 88.        88         88    88 `88. 88   88 Y8b  d8 88 `88. db   8D 
-    88      88   YD Y88888P `8888Y' Y88888P    YP         YP    88   YD YP   YP  `Y88P' YP   YD `8888Y' 
-                                                                                                        
-                                                                                                        
-
-    */
-    const presetSongs = {
-        "beat-1": `{"bpm":120,"measures":"4","notes":[{"audioSrc":"./sounds/kick.wav","ms":14.571948998178506},{"audioSrc":"./sounds/tink.wav","ms":10.92896174863388},{"audioSrc":"./sounds/clap.wav","ms":510.0182149362478},{"audioSrc":"./sounds/kick.wav","ms":757.7413479052824},{"audioSrc":"./sounds/snare.wav","ms":502.73224043715845},{"audioSrc":"./sounds/kick.wav","ms":1264.1165755919853},{"audioSrc":"./sounds/tink.wav","ms":1001.8214936247722},{"audioSrc":"./sounds/snare.wav","ms":1384.335154826958},{"audioSrc":"./sounds/clap.wav","ms":1508.1967213114754},{"audioSrc":"./sounds/kick.wav","ms":1755.9198542805102},{"audioSrc":"./sounds/tink.wav","ms":1500.9107468123862},{"audioSrc":"./sounds/snare.wav","ms":1504.5537340619308},{"audioSrc":"./sounds/kick.wav","ms":2003.6429872495444},{"audioSrc":"./sounds/clap.wav","ms":2499.0892531876134},{"audioSrc":"./sounds/cowbell.wav","ms":2019},{"audioSrc":"./sounds/hihat.wav","ms":2258.6520947176687},{"audioSrc":"./sounds/kick.wav","ms":2746.8123861566482},{"audioSrc":"./sounds/snare.wav","ms":2506.375227686703},{"audioSrc":"./sounds/tink.wav","ms":2517.304189435337},{"audioSrc":"./sounds/cowbell_muted.wav","ms":2514.088114754098},{"audioSrc":"./sounds/hihat.wav","ms":2739.5264116575595},{"audioSrc":"./sounds/kick.wav","ms":3253.1876138433513},{"audioSrc":"./sounds/clap.wav","ms":3497.267759562841},{"audioSrc":"./sounds/snare.wav","ms":3387.978142076503},{"audioSrc":"./sounds/tink.wav","ms":3016.3934426229507},{"audioSrc":"./sounds/cowbell.wav","ms":3036},{"audioSrc":"./sounds/cowbell_muted.wav","ms":3260.4735883424405},{"audioSrc":"./sounds/kick.wav","ms":3744.990892531876},{"audioSrc":"./sounds/tink.wav","ms":3508},{"audioSrc":"./sounds/snare.wav","ms":3505},{"audioSrc":"./sounds/cowbell_muted.wav","ms":3724},{"audioSrc":"./sounds/hihat.wav","ms":3752.2768670309656},{"audioSrc":"./sounds/tink.wav","ms":4007.2859744990888},{"audioSrc":"./sounds/kick.wav","ms":4010.9289617486334},{"audioSrc":"./sounds/snare.wav","ms":4499.089253187613},{"audioSrc":"./sounds/clap.wav","ms":4506.375227686703},{"audioSrc":"./sounds/kick.wav","ms":4754.098360655737},{"audioSrc":"./sounds/tink.wav","ms":4998.178506375227},{"audioSrc":"./sounds/kick.wav","ms":5260.47358834244},{"audioSrc":"./sounds/snare.wav","ms":5380.692167577413},{"audioSrc":"./sounds/tink.wav","ms":5497.267759562841},{"audioSrc":"./sounds/snare.wav","ms":5500.910746812386},{"audioSrc":"./sounds/clap.wav","ms":5504.55373406193},{"audioSrc":"./sounds/kick.wav","ms":5752.276867030965},{"audioSrc":"./sounds/kick.wav","ms":5999.999999999999},{"audioSrc":"./sounds/cowbell.wav","ms":6015.357012750455},{"audioSrc":"./sounds/clap.wav","ms":6495.446265938068},{"audioSrc":"./sounds/snare.wav","ms":6264.145036429873},{"audioSrc":"./sounds/snare.wav","ms":6502.732240437158},{"audioSrc":"./sounds/cowbell_muted.wav","ms":6510.445127504553},{"audioSrc":"./sounds/tink.wav","ms":6513.661202185792},{"audioSrc":"./sounds/kick.wav","ms":6743.169398907103},{"audioSrc":"./sounds/snare.wav","ms":6624.078624078625},{"audioSrc":"./sounds/snare.wav","ms":6755.118755118756},{"audioSrc":"./sounds/tink.wav","ms":7012.750455373405},{"audioSrc":"./sounds/kick.wav","ms":7249.544626593806},{"audioSrc":"./sounds/cowbell_muted.wav","ms":7256.830601092895},{"audioSrc":"./sounds/snare.wav","ms":7384.335154826958},{"audioSrc":"./sounds/clap.wav","ms":7493.6247723132965},{"audioSrc":"./sounds/cowbell.wav","ms":7012.408925318762},{"audioSrc":"./sounds/snare.wav","ms":7501.357012750455},{"audioSrc":"./sounds/tink.wav","ms":7504.357012750455},{"audioSrc":"./sounds/kick.wav","ms":7741.347905282331},{"audioSrc":"./sounds/hihat.wav","ms":7504.553734061931},{"audioSrc":"./sounds/openhat.wav","ms":7750.341530054645},{"audioSrc":"./sounds/snare.wav","ms":7762.721994535519},{"audioSrc":"./sounds/cowbell_muted.wav","ms":7753.0712530712535},{"audioSrc":"./sounds/ride.wav","ms":7993.447993447994}]}`,
-
-        "beat-2": `{"bpm":"83","measures":"2","notes":[{"audioSrc":"./sounds/kick.wav","ms":13.167423793534795},{"audioSrc":"./sounds/boom.wav","ms":15.800908552241753},{"audioSrc":"./sounds/tink.wav","ms":376.58832049509505},{"audioSrc":"./sounds/openhat.wav","ms":11.89182961353611},{"audioSrc":"./sounds/tom.wav","ms":545.1313450523404},{"audioSrc":"./sounds/cowbell.wav","ms":18.948745802883664},{"audioSrc":"./sounds/ride.wav","ms":18.948745802883664},{"audioSrc":"./sounds/openhat.wav","ms":34},{"audioSrc":"./sounds/cowbell_muted.wav","ms":10.533939034827835},{"audioSrc":"./sounds/kick.wav","ms":1258.8057146619262},{"audioSrc":"./sounds/cowbell_muted.wav","ms":1086.1478701692013},{"audioSrc":"./sounds/clap.wav","ms":722.8915662650602},{"audioSrc":"./sounds/snare.wav","ms":737.3757324379485},{"audioSrc":"./sounds/tink.wav","ms":740.0092171966554},{"audioSrc":"./sounds/kick.wav","ms":1806.5705444729738},{"audioSrc":"./sounds/boom.wav","ms":1817.1044835078014},{"audioSrc":"./sounds/cowbell_muted.wav","ms":1807.2494897623278},{"audioSrc":"./sounds/tom.wav","ms":1632.7605503983145},{"audioSrc":"./sounds/snare.wav","ms":2180.5253802093616},{"audioSrc":"./sounds/kick.wav","ms":2525.5118835999733},{"audioSrc":"./sounds/hihat.wav","ms":2352.977483705313},{"audioSrc":"./sounds/clap.wav","ms":2174.0361445783133},{"audioSrc":"./sounds/boom.wav","ms":2716.562973204292},{"audioSrc":"./sounds/hihat.wav","ms":2701.95536243334},{"audioSrc":"./sounds/cowbell_muted.wav","ms":2354.1502073869246},{"audioSrc":"./sounds/openhat.wav","ms":2902.100204095069},{"audioSrc":"./sounds/kick.wav","ms":2903.3757982750676},{"audioSrc":"./sounds/boom.wav","ms":2906.0092830337744},{"audioSrc":"./sounds/cowbell.wav","ms":2915.2083744815327},{"audioSrc":"./sounds/tink.wav","ms":3266.796694976628},{"audioSrc":"./sounds/tom.wav","ms":3435.339719533873},{"audioSrc":"./sounds/cowbell.wav","ms":3599.2083744815327},{"audioSrc":"./sounds/clap.wav","ms":3613.099940746593},{"audioSrc":"./sounds/snare.wav","ms":3627.584106919481},{"audioSrc":"./sounds/tink.wav","ms":3630.217591678188},{"audioSrc":"./sounds/cowbell_muted.wav","ms":3976.356244650734},{"audioSrc":"./sounds/kick.wav","ms":4149.0140891434585},{"audioSrc":"./sounds/cowbell.wav","ms":4322.824083218118},{"audioSrc":"./sounds/tom.wav","ms":4522.968924879848},{"audioSrc":"./sounds/kick.wav","ms":4696.7789189545065},{"audioSrc":"./sounds/cowbell_muted.wav","ms":4697.457864243861},{"audioSrc":"./sounds/boom.wav","ms":4707.312857989335},{"audioSrc":"./sounds/cowbell.wav","ms":5033.991507011653},{"audioSrc":"./sounds/clap.wav","ms":5064.244519059846},{"audioSrc":"./sounds/snare.wav","ms":5070.733754690895},{"audioSrc":"./sounds/hihat.wav","ms":5243.1858581868455},{"audioSrc":"./sounds/cowbell_muted.wav","ms":5244.358581868458},{"audioSrc":"./sounds/kick.wav","ms":5415.7202580815065},{"audioSrc":"./sounds/hihat.wav","ms":5592.163736914872},{"audioSrc":"./sounds/boom.wav","ms":5606.771347685824}]}`,
-
-        "beat-3": `{"bpm":120,"measures":2,"notes":[{"audioSrc":"./sounds/kick.wav","ms":13.179571663920923},{"audioSrc":"./sounds/tink.wav","ms":286},{"audioSrc":"./sounds/hihat.wav","ms":253},{"audioSrc":"./sounds/hihat.wav","ms":23.064250411861615},{"audioSrc":"./sounds/kick.wav","ms":771.004942339374},{"audioSrc":"./sounds/snare.wav","ms":542},{"audioSrc":"./sounds/tink.wav","ms":770},{"audioSrc":"./sounds/tom.wav","ms":637.7162273476113},{"audioSrc":"./sounds/tom.wav","ms":760.4638591433278},{"audioSrc":"./sounds/tom.wav","ms":509.3827224052718},{"audioSrc":"./sounds/clap.wav","ms":1021.4168039538715},{"audioSrc":"./sounds/tink.wav","ms":1270},{"audioSrc":"./sounds/hihat.wav","ms":1258.6490939044481},{"audioSrc":"./sounds/boom.wav","ms":1040},{"audioSrc":"./sounds/kick.wav","ms":1766.0626029654036},{"audioSrc":"./sounds/snare.wav","ms":1532.1252059308072},{"audioSrc":"./sounds/tink.wav","ms":1787},{"audioSrc":"./sounds/hihat.wav","ms":1509.0609555189455},{"audioSrc":"./sounds/kick.wav","ms":2260.296540362438},{"audioSrc":"./sounds/tink.wav","ms":2009.8846787479406},{"audioSrc":"./sounds/cowbell.wav","ms":2016.4744645799012},{"audioSrc":"./sounds/cowbell.wav","ms":2490.939044481054},{"audioSrc":"./sounds/hihat.wav","ms":2007.503603789127},{"audioSrc":"./sounds/hihat.wav","ms":2253.0632207578255},{"audioSrc":"./sounds/kick.wav","ms":2517.2981878088963},{"audioSrc":"./sounds/snare.wav","ms":2754.530477759473},{"audioSrc":"./sounds/tink.wav","ms":2767.710049423394},{"audioSrc":"./sounds/tink.wav","ms":2503.783978583196},{"audioSrc":"./sounds/tom.wav","ms":2642.504118616145},{"audioSrc":"./sounds/tom.wav","ms":2751.2355848434927},{"audioSrc":"./sounds/clap.wav","ms":3008.2372322899505},{"audioSrc":"./sounds/tink.wav","ms":3252.0593080724875},{"audioSrc":"./sounds/cowbell.wav","ms":3004.9423393739703},{"audioSrc":"./sounds/cowbell_muted.wav","ms":3249.626750411862},{"audioSrc":"./sounds/hihat.wav","ms":3256.229406919275},{"audioSrc":"./sounds/boom.wav","ms":3011.5321252059307},{"audioSrc":"./sounds/openhat.wav","ms":3245.469522240527},{"audioSrc":"./sounds/ride.wav","ms":3001.64744645799},{"audioSrc":"./sounds/kick.wav","ms":3502.4711696869854},{"audioSrc":"./sounds/snare.wav","ms":3515.6507413509057},{"audioSrc":"./sounds/cowbell_muted.wav","ms":3748.455518945634},{"audioSrc":"./sounds/hihat.wav","ms":3755.6373558484347}]}`,
-
-        "beat-6": `{"bpm":120,"measures":"4","notes":[{"audioSrc":"./sounds/kick.wav","ms":19.71830985915493},{"audioSrc":"./sounds/clap.wav","ms":504.22535211267603},{"audioSrc":"./sounds/kick.wav","ms":1247.8873239436618},{"audioSrc":"./sounds/clap.wav","ms":1504.225352112676},{"audioSrc":"./sounds/kick.wav","ms":2005.6338028169014},{"audioSrc":"./sounds/clap.wav","ms":2490.1408450704225},{"audioSrc":"./sounds/kick.wav","ms":2754.9295774647885},{"audioSrc":"./sounds/kick.wav","ms":3233.8028169014083},{"audioSrc":"./sounds/clap.wav","ms":3490.1408450704225},{"audioSrc":"./sounds/kick.wav","ms":3753.0072173215717},{"audioSrc":"./sounds/kick.wav","ms":4005.6338028169016},{"audioSrc":"./sounds/clap.wav","ms":4490.140845070423},{"audioSrc":"./sounds/kick.wav","ms":5233.802816901409},{"audioSrc":"./sounds/clap.wav","ms":5490.140845070423},{"audioSrc":"./sounds/kick.wav","ms":6005.633802816901},{"audioSrc":"./sounds/kick.wav","ms":6761.828388131516},{"audioSrc":"./sounds/clap.wav","ms":7008.450704225353},{"audioSrc":"./sounds/clap.wav","ms":7256.338028169014},{"audioSrc":"./sounds/clap.wav","ms":7509.859154929577},{"audioSrc":"./sounds/clap.wav","ms":7752.112676056338},{"audioSrc":"./sounds/clap.wav","ms":7639.43661971831},{"audioSrc":"./sounds/ride.wav","ms":7545}]}`,
-
-        "beat-box-2": `{"bpm":120,"measures":2,"notes":[{"audioSrc":"./sounds/beatbox/beatbox_Tick.wav","ms":379.4950267788829},{"audioSrc":"./sounds/beatbox/beatboxKick.wav","ms":137.71996939556234},{"audioSrc":"./sounds/beatbox/beatbox_KickExplosive.wav","ms":3.06044376434583},{"audioSrc":"./sounds/beatbox/beatbox_KickExplosive.wav","ms":257.0772762050497},{"audioSrc":"./sounds/beatbox/beatboxRim.wav","ms":504.973221117062},{"audioSrc":"./sounds/beatbox/beatbox_BackwardsSnare.wav","ms":749.8087222647284},{"audioSrc":"./sounds/beatbox/beatboxKickHic.wav","ms":1003.8255547054322},{"audioSrc":"./sounds/beatbox/beatboxRim.wav","ms":1499.6174445294569},{"audioSrc":"./sounds/beatbox/beatbox_Tick.wav","ms":2384.0856924254017},{"audioSrc":"./sounds/beatbox/beatbox_KickExplosive.wav","ms":2004.5906656465186},{"audioSrc":"./sounds/beatbox/beatbox_KickExplosive.wav","ms":2258.6074980872227},{"audioSrc":"./sounds/beatbox/beatboxKick.wav","ms":2123.947972456006},{"audioSrc":"./sounds/beatbox/beatboxRim.wav","ms":2506.503442999235},{"audioSrc":"./sounds/beatbox/beatbox_BackwardsSnare.wav","ms":2754.399387911247},{"audioSrc":"./sounds/beatbox/beatboxKickHic.wav","ms":3002.2953328232593},{"audioSrc":"./sounds/beatbox/beatbox_Tick.wav","ms":3387.911247130834},{"audioSrc":"./sounds/beatbox/beatboxRim.wav","ms":3501.14766641163},{"audioSrc":"./sounds/beatbox/beatbox_Tick.wav","ms":3878},{"audioSrc":"./sounds/beatbox/beatbox_Tick.wav","ms":3755.1644988523335},{"audioSrc":"./sounds/beatbox/beatbox_Tick.wav","ms":3632.7467482785005}]}`,
-
-        "beat-7": `{"bpm":120,"measures":2,"notes":[{"audioSrc":"./sounds/snare.wav","fraction":0.6255000000000002},{"audioSrc":"./sounds/kick.wav","fraction":0.31355000000000005},{"audioSrc":"./sounds/kick.wav","fraction":0.4386500000000002},{"audioSrc":"./sounds/snare.wav","fraction":0.874251497005988},{"audioSrc":"./sounds/snare.wav","fraction":0.12724550898203593},{"audioSrc":"./sounds/kick.wav","fraction":0.2522455089820359},{"audioSrc":"./sounds/kick.wav","fraction":0.0029940119760479044},{"audioSrc":"./sounds/kick.wav","fraction":0.562874251497006},{"audioSrc":"./sounds/kick.wav","fraction":0.688622754491018},{"audioSrc":"./sounds/kick.wav","fraction":0.7514970059880239},{"audioSrc":"./sounds/snare.wav","fraction":0.37649700598802394},{"audioSrc":"./sounds/clap.wav","fraction":0.37425149700598803},{"audioSrc":"./sounds/clap.wav","fraction":0.875748502994012},{"audioSrc":"./sounds/cowbell.wav","fraction":0.18862275449101795},{"audioSrc":"./sounds/cowbell.wav","fraction":0.31362275449101795},{"audioSrc":"./sounds/cowbell.wav","fraction":0.687874251497006},{"audioSrc":"./sounds/cowbell.wav","fraction":0.8143712574850299},{"audioSrc":"./sounds/cowbell_muted.wav","fraction":0.12649700598802396},{"audioSrc":"./sounds/boom.wav","fraction":0.43862275449101795},{"audioSrc":"./sounds/cowbell_muted.wav","fraction":0.625748502994012},{"audioSrc":"./sounds/beatbox/beatboxRim.wav","fraction":0.938622754491018},{"audioSrc":"./sounds/snare.wav","fraction":0.9079341317365269}]}`,
-
-    };
-
     /*
 
         d8888b.  .d88b.  d888888b d8b   db d888888b    .d88b.  d88888b   d88888b d8b   db d888888b d8888b. db    db 
@@ -1517,7 +1344,7 @@ db   8D 88   88 88  88  88 88      88booo. 88.     db   8D
     buildLibraryPulldown();
     SamplesManager.setAudioElementsIds();
     SamplesManager.loadSamplesLibrary("standard");
-    SongManager.buildTrack();
+    buildTrack();
     buildSampleSelector();
 })();
 

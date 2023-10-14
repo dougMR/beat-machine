@@ -1,6 +1,4 @@
-// We don't like importing SamplesManager here, because it's also imported into main drum-machine.js
-// Make more separation of functionality?
-import { SamplesManager } from "./module-samples.js";
+import { positionBeatIcons, track, drawTrack } from "./module-trackGUI.js";
 // Song Module
 
 /* 
@@ -17,7 +15,11 @@ db   8D `8b  d8' 88  V888 88. ~8~    d8'         88    88 `88. 88   88 Y8b  d8 8
 const song = [];
 const songQuantized = [];
 
+// IS this even who should keep track of isPlaying?
 let isPlaying = false;
+let isRecording = false;
+let isEditing = false;
+
 
 let bpm = 120;
 let msPerBeat = 60000 / bpm;
@@ -25,81 +27,31 @@ let msPer8th = msPerBeat * 0.5;
 let msPer16th = msPer8th * 0.5;
 let measures = 2;
 
-// trackEl is also declared in drum-machine.js
-// redundancy bad.  How to fix?
-const trackEl = document.getElementById("track");
-const track = {};
-track.marquis = trackEl.querySelector("#marquis");
-track.clipboardNotes = [];
 
-const selectBeatIcon = (beatIcon) => {
-    // Show it selected
-    if (!beatIcon.classList.contains("selected")) {
-        beatIcon.classList.add("selected");
-        if (!isPlaying) {
-            SamplesManager.playSound(beatIcon.note.audio);
-        }
-        document.getElementById("copy-notes").classList.add("on");
-    }
+const getIsRecording = () => {
+    return isRecording;
+}
+const setIsRecording = (value) => {
+    isRecording = value;
+}
+const getIsEditing = () => {
+    return isEditing;
+}
+const setIsEditing = (value) => {
+    isEditing = value;
+}
+const getIsPlaying = () => {
+    return isPlaying;
+}
+
+const getMsPerBeat = () => {
+    return msPerBeat;
 };
-
-const deselectBeatIcon = (beatIcon) => {
-    beatIcon.classList.remove("selected");
+const getMsPer8th = () => {
+    return msPer8th;
 };
-
-const deselectBeatIcons = () => {
-    // deselect all beat icons
-    let beatIcons = Array.from(
-        document.querySelectorAll("#beat-icons .beat-icon")
-    );
-    for (const beatIcon of beatIcons) {
-        deselectBeatIcon(beatIcon);
-    }
-};
-
-track.toggleSelectBeat = (beatIcon) => {
-    if (beatIcon.classList.contains("selected")) {
-        deselectBeatIcon(beatIcon);
-    } else {
-        selectBeatIcon(beatIcon);
-    }
-};
-
-track.marquisBeats = (start, end) => {
-    const minX = Math.min(start.x, end.x),
-        maxX = Math.max(start.x, end.x),
-        minY = Math.min(start.y, end.y),
-        maxY = Math.max(start.y, end.y);
-
-    let beatIcons = Array.from(
-        document.querySelectorAll("#beat-icons .beat-icon")
-    );
-
-    for (const beatIcon of beatIcons) {
-        // inside marquis?
-        const trackRect = trackEl.getBoundingClientRect(),
-            iconRect = beatIcon.getBoundingClientRect(),
-            x = iconRect.left - trackRect.left,
-            y = iconRect.top - trackRect.top;
-        if (x >= minX && x <= maxX && y >= minY && y <= maxY) {
-            // Beat is inside marquis
-            selectBeatIcon(beatIcon);
-        } else {
-            deselectBeatIcon(beatIcon);
-        }
-    }
-};
-
-track.drawMarquis = (start, end) => {
-    const minX = Math.min(start.x, end.x),
-        maxX = Math.max(start.x, end.x),
-        minY = Math.min(start.y, end.y),
-        maxY = Math.max(start.y, end.y);
-
-    track.marquis.style.left = minX + "px";
-    track.marquis.style.top = minY + "px";
-    track.marquis.style.width = maxX - minX + "px";
-    track.marquis.style.height = maxY - minY + "px";
+const getMsPer16th = () => {
+    return msPer16th;
 };
 
 const setTempo = (value) => {
@@ -109,65 +61,14 @@ const setTempo = (value) => {
     msPer16th = msPer8th * 0.5;
     track.duration = msPerBeat * 4 * measures;
     drawTrack();
-    // positionBeatIcons();
-    // positionPlayheadByElapsed();
 };
 
 const setMeasures = (value) => {
-    // console.log('song.setMeasures()',value);
-    // console.log('measures:',measures);
-    // console.log(typeof value);
     const ratio = measures / value;
-    // console.log('ratio',ratio);
     recalculateNotesFractions(ratio);
     measures = value;
-    // console.log('measures: ',measures);
-    track.duration = msPerBeat * 4 * measures;
-    // console.log('measures: ',measures);
-    drawTrack();
-    // console.log('measures: ',measures);
-    // positionBeatIcons();
-    // positionPlayheadByElapsed();
-};
-
-// -------------------------------
-// Initial draw of Track view
-// -------------------------------
-const buildTrack = () => {
-    // playheadEl.style.left = 0;
-    track.trackWidth = trackEl.offsetWidth;
     track.duration = msPerBeat * 4 * measures;
     drawTrack();
-};
-
-const drawTrack = () => {
-    const total8ths = measures * 8;
-    const pxPer8th = track.trackWidth / total8ths;
-    const beatsHolder = document.querySelector("#track #beats");
-    beatsHolder.innerHTML = "";
-    for (let eighthIndex = 0; eighthIndex < total8ths + 1; eighthIndex++) {
-        // make a new eighth-note line
-        const eighthLine = document.createElement("div");
-        eighthLine.classList.add("beat-line");
-        // if it's an up-beat, make it lighter
-        if (eighthIndex % 2 == 1) {
-            eighthLine.classList.add("up-beat");
-        }
-        // if it's a measure, make it even brighter
-        if (eighthIndex !== 0 && eighthIndex % 8 === 0) {
-            eighthLine.classList.add("measure");
-        }
-        // position line
-        eighthLine.style.left = `${pxPer8th * eighthIndex}px`;
-        beatsHolder.appendChild(eighthLine);
-    }
-};
-
-const redrawTrack = () => {
-    track.trackWidth = trackEl.offsetWidth;
-    drawTrack();
-    positionBeatIcons();
-    positionPlayheadByElapsed();
 };
 
 // -------------------------------
@@ -197,6 +98,10 @@ const getNoteMS = (note) => {
     }
 };
 
+const getMeasures = () => {
+    return measures;
+};
+
 const removeDuplicateNotes = (note) => {
     // console.log('removeDuplicateNotes()');
     // Remove 'duplicates' of this note
@@ -204,7 +109,7 @@ const removeDuplicateNotes = (note) => {
     // If note of same sample already in song less than minMSdiff away,
     // remove it and add this one.
     const minMSdiff = 10;
-    const dupes = findSampleInSong(note.audio);
+    const dupes = findSampleInSong(note.audioEl);
     for (const dupe of dupes) {
         if (dupe !== note) {
             const msDiff = Math.abs(noteMS - getNoteMS(dupe));
@@ -233,7 +138,7 @@ const getNotesMSdifference = (note1, note2) => {
 const checkSampleInSong = (audioEl) => {
     // Is this sample used in the track?
     for (const note of song) {
-        if (note.audio === audioEl) {
+        if (note.audioEl === audioEl) {
             return true;
         }
     }
@@ -244,7 +149,7 @@ const findSampleInSong = (audioEl) => {
     // returns array of notes
     const matchingNotes = [];
     for (const note of song) {
-        if (note.audio === audioEl) {
+        if (note.audioEl === audioEl) {
             matchingNotes.push(note);
         }
     }
@@ -252,7 +157,7 @@ const findSampleInSong = (audioEl) => {
 };
 
 const removeNotesFromSong = (notesAr) => {
-    console.log('removeNotesFromSong()');
+    console.log("removeNotesFromSong()");
     for (const note of notesAr) {
         removeNoteFromSong(note);
     }
@@ -297,6 +202,107 @@ const getAllNotesInSong = () => {
     // return notes;
 };
 
+/*
+
+
+     .d88b.  db    db  .d8b.  d8b   db d888888b d888888b d88888D d88888b 
+    .8P  Y8. 88    88 d8' `8b 888o  88 `~~88~~'   `88'   YP  d8' 88'     
+    88    88 88    88 88ooo88 88V8o 88    88       88       d8'  88ooooo 
+    88    88 88    88 88~~~88 88 V8o88    88       88      d8'   88~~~~~ 
+    `8P  d8' 88b  d88 88   88 88  V888    88      .88.    d8' db 88.     
+     `Y88'Y8 ~Y8888P' YP   YP VP   V8P    YP    Y888888P d88888P Y88888P 
+                                                                                                                                 
+    */
+let quantizePrecision = 4;
+let quantizeOn = false;
+
+const setQuantizePrecision = (value) => {
+    quantizePrecision = value;
+}
+const getQuantizePrecision = () => {
+    return quantizePrecision;
+}
+
+const addNoteToSongQuantized = (note) => {
+    songQuantized.push(note);
+};
+
+const quantizeNote = (note) => {
+    console.log("quantizeNote()");
+    console.log('quantizePrecision: ',quantizePrecision);
+    // quantizePrecision 4 = quarternote, 8 = 8thnote ect...
+    let msFrequency;
+    if (quantizePrecision === 4) {
+        msFrequency = msPerBeat;
+    } else if (quantizePrecision === 8) {
+        msFrequency = msPer8th;
+    } else if (quantizePrecision === 16) {
+        msFrequency = msPer16th;
+    }
+
+    // get Note's MS
+    const noteMS = getNoteMS(note);
+
+    let beatNum = Math.floor(noteMS / msFrequency);
+    const remainder = noteMS - beatNum * msFrequency;
+    const closest = Math.round(remainder / msFrequency);
+    beatNum += closest;
+    const totalBeats = track.duration / msFrequency;
+    if (beatNum === totalBeats) {
+        beatNum = 0;
+    }
+
+    console.log('beatNum: ',beatNum);
+    const quantizedNote = {
+        audioEl: note.audioEl,
+        beatIcon: note.beatIcon,
+        ms: beatNum * msFrequency,
+        fraction: beatNum * (msFrequency / track.duration),
+    };
+    note.beatIcon.qNote = quantizedNote;
+    return quantizedNote;
+};
+
+const quantizeTrack = () => {
+    // re-quantize the track
+    songQuantized.length = 0;
+    for (const note of song) {
+        const quantizedNote = quantizeNote(note);
+        addNoteToSongQuantized(quantizedNote);
+        // note.beatIcon.qNote = quantizedNote;
+    }
+    if (quantizeOn) repositionBeatIcons();
+};
+
+const toggleQuantize = () => {
+    console.log("toggleQuantize()");
+    console.log('quantizePrecision',quantizePrecision)
+    // console.log('before - quantizeOn: ',quantizeOn);
+    quantizeOn = !quantizeOn;
+    // console.log('after - quantizeOn: ',quantizeOn);
+    document.getElementById("quantize-light").classList.toggle("on");
+    repositionBeatIcons();
+};
+
+const getQuantizeOn = () => {
+    return quantizeOn;
+};
+
+const repositionBeatIcons = () => {
+    console.log("repositionBeatIcons()");
+    getSongNotes();
+    positionBeatIcons(getSongNotes());
+};
+
+const getSongNotes = () => {
+    const songAr = quantizeOn ? songQuantized : song;
+    return songAr;
+};
+
+const quantizeSelectedNotes = () => {
+    // Quantize only the selected notes
+};
+
 const lockQuantized = () => {
     // replace regular note's properties with quantized note's properties
     const notesToQuantize = getAllNotesInSong();
@@ -309,13 +315,12 @@ const lockQuantized = () => {
 
 export const SongManager = {
     song,
-    songQuantized,
     getMsPerBeat: () => msPerBeat,
     getMsPer8th: () => msPer8th,
     getMsPer16th: () => msPer16th,
     getBpm: () => bpm,
     getMeasures: () => measures,
-    track,
+    track, // <-- track is coming from module-track now.  Maybe don't export it here?
     // getAllNotesInSong,
     removeNoteFromSong,
     removeNotesFromSong,
@@ -326,11 +331,36 @@ export const SongManager = {
     removeDuplicateNotes,
     getNoteMS,
     // recalculateNotesFractions,
-    lockQuantized,
-    buildTrack,
-    redrawTrack,
     setTempo,
     setMeasures,
-    selectBeatIcon,
-    deselectBeatIcons,
+    // selectBeatIcon,
+    // deselectBeatIcons,
+    repositionBeatIcons,
+};
+export const QuantizeManager = {
+    songQuantized,
+    // quantizePrecision,
+    getQuantizePrecision,
+    setQuantizePrecision,
+    getQuantizeOn,
+    addNoteToSongQuantized,
+    quantizeNote,
+    quantizeTrack,
+    toggleQuantize,
+    quantizeSelectedNotes,
+    lockQuantized,
+};
+export {
+    findSampleInSong,
+    removeNotesFromSong,
+    getMsPerBeat,
+    getMsPer8th,
+    getMsPer16th,
+    getMeasures,
+    getSongNotes,
+    getIsPlaying,
+    getIsRecording,
+    setIsRecording,
+    getIsEditing,
+    setIsEditing
 };

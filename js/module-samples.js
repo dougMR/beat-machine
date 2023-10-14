@@ -1,3 +1,7 @@
+import {
+    findSampleInSong,
+    removeNotesFromSong,
+} from "./module-song.js";
 /*
 
 
@@ -147,8 +151,6 @@ const playSound = (audioEl) => {
     audioEl.play();
     // }
 };
-
-
 
 const clearSampleKeys = () => {
     keysEl.innerHTML = "";
@@ -317,7 +319,7 @@ const SamplesManager = {
     setAudioElementsIds,
     // playSampleCopy,
     // dupeSample
-    setCheckedSamplesByActiveSamples
+    setCheckedSamplesByActiveSamples,
 };
 
-export { SamplesManager };
+export { SamplesManager, activeSamples, playSound };

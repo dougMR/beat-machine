@@ -280,11 +280,7 @@ button.on {
     text-shadow: -0.05em -0.05em 0.1em rgba(0, 0, 0, 0.5);
     /* margin-bottom: 2rem; */
 }
-#edit-light p::first-letter {
-    color: #8bd7f0;
-    font-size: 1.3rem;
 
-}
 #rec-light {
     background-color: #831414;
     color: #ff2222;
@@ -337,6 +333,12 @@ button.on {
 #edit-light {
     background-color: rgb(75, 142, 204);
     color: rgb(141, 192, 209);
+    font-size:1em;
+}
+#edit-light p::first-letter {
+    color: #8bd7f0;
+    font-size: 1.2rem;
+
 }
 #edit-light.on {
     background-color: rgb(135, 170, 236);
