@@ -1739,7 +1739,7 @@ db   8D `8b  d8' 88  V888 88. ~8~    d8'         88    88 `88. 88   88 Y8b  d8 8
             const trackX = trackEl.getBoundingClientRect().left;
             let playheadX = clientX - trackX;
             playheadX = Math.max(Math.min(playheadX, track.trackWidth), 0);
-
+            currentBeat = Math.floor(elapsed / SongManager.getMsPerBeat());
             setPlayheadPosition(playheadX);
             setElapsedFromPlayheadPosition();
             // console.log(playheadX + "px");
