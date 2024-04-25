@@ -44,6 +44,8 @@ track.clipboardNotes = [];
 
 Ideas to add:
 
+ - dragging playhead doesn't update measure and beat displayed
+
  - create volume setter
 
  - when you switch sample library, check if samples being removed are used in track.  Then prompt -> Keep on samples used in track?
@@ -740,6 +742,23 @@ db   8D 88   88 88  88  88 88      88booo. 88.     db   8D
     //     });
     // });
 
+    document.getElementById('edit-light').addEventListener('pointerdown', event => {
+        // toggle edit
+        toggleEdit();
+    })
+    document.getElementById('quantize-light').addEventListener('pointerdown', event => {
+        // toggle quantize
+        toggleQuantize();
+    })
+    document.getElementById('rec-light').addEventListener('pointerdown', event => {
+        // toggle recording
+        toggleRecording();
+    })
+    document.getElementById('clear-light').addEventListener('pointerdown', event => {
+        // clear notes
+        clearTrack();
+    })
+
     const handleMovePointer = (event) => {
         if (draggingPlayhead) {
             // console.log("dragging playhead");
@@ -750,7 +769,12 @@ db   8D 88   88 88  88  88 88      88booo. 88.     db   8D
             playheadX = Math.max(Math.min(playheadX, track.trackWidth), 0);
 
             setPlayheadPosition(playheadX);
+            currentBeat = Math.floor(elapsed / SongManager.getMsPerBeat());
+            // currentMeasure = Math.floor(currentBeat / 4);
+            // currentBeat -= currentMeasure * 4;
+
             setElapsedFromPlayheadPosition();
+
             // console.log(playheadX + "px");
         } else if (getDraggingIcons()) {
             // Drag Icons
