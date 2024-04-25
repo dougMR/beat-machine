@@ -1428,6 +1428,23 @@ db   8D `8b  d8' 88  V888 88. ~8~    d8'         88    88 `88. 88   88 Y8b  d8 8
     //     });
     // });
 
+    document.getElementById('edit-light').addEventListener('pointerdown', event => {
+        // toggle edit
+        toggleEdit();
+    })
+    document.getElementById('quantize-light').addEventListener('pointerdown', event => {
+        // toggle quantize
+        toggleQuantize();
+    })
+    document.getElementById('rec-light').addEventListener('pointerdown', event => {
+        // toggle recording
+        toggleRecording();
+    })
+    document.getElementById('clear-light').addEventListener('pointerdown', event => {
+        // clear notes
+        clearTrack();
+    })
+
     clearLight.addEventListener("transitionend", (event) => {
         if (event.target.classList.contains("on")) {
             event.target.classList.remove("on");
